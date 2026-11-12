@@ -1,0 +1,361 @@
+// Database Markup Language (DBML) Specification
+// Sistem Informasi Enterprise Administrasi SMA Negeri 1 Bunut
+// Version: 1.0.0 (Baseline for M0)
+
+Project sie_sman1_bunut {
+  database_type: 'PostgreSQL / SQLite WAL'
+  Note: '''
+    Skema basis data Sistem Informasi Enterprise Administrasi SMA Negeri 1 Bunut.
+    Mendukung transaksi atomik, audit snapshot model (simple-history),
+    optimistic locking (kolom version), dan isolasi dokumen privat.
+  '''
+}
+
+// ------------------------------------------------------
+// ENUMS
+// ------------------------------------------------------
+
+Enum GenderEnum {
+  LAKI_LAKI [note: 'Laki-laki']
+  PEREMPUAN [note: 'Perempuan']
+}
+
+Enum StudentStatusEnum {
+  AKTIF [note: 'Siswa aktif terdaftar']
+  MUTASI_KELUAR [note: 'Siswa pindah sekolah']
+  LULUS [note: 'Siswa telah tamat']
+  NONAKTIF [note: 'Siswa nonaktif/cuti']
+}
+
+Enum EmployeeStatusEnum {
+  AKTIF [note: 'Pegawai/guru aktif bertugas']
+  CUTI [note: 'Sedang cuti resmi']
+  NONAKTIF [note: 'Pensiun/pindah tugas']
+}
+
+Enum ClassAssignmentRoleEnum {
+  GURU_MAPEL [note: 'Guru pengampu mata pelajaran']
+  WALI_KELAS [note: 'Wali kelas penanggung jawab rombel']
+}
+
+Enum AttendanceStatusEnum {
+  HADIR [note: 'Hadir di kelas']
+  SAKIT [note: 'Tidak hadir dengan surat keterangan sakit']
+  IZIN [note: 'Tidak hadir dengan surat izin orang tua/wali']
+  ALPA [note: 'Tidak hadir tanpa keterangan sah']
+}
+
+Enum CaseStatusEnum {
+  BARU [note: 'Kasus baru dilaporkan/dicatat']
+  DIPROSES [note: 'Sedang dalam penanganan konseling kesiswaan']
+  SELESAI [note: 'Kasus telah terselesaikan dan ditutup']
+  DIBATALKAN [note: 'Laporan kasus dibatalkan karena tidak valid']
+}
+
+Enum ServiceRequestStatusEnum {
+  DIAJUKAN [note: 'Permohonan baru masuk antrean']
+  DIPROSES [note: 'Sedang diverifikasi dan disiapkan oleh Tata Usaha']
+  MENUNGGU_PERSETUJUAN [note: 'Menunggu tanda tangan/persetujuan pimpinan']
+  DISETUJUI [note: 'Telah disetujui pimpinan dan siap diterbitkan']
+  DITOLAK [note: 'Permohonan ditolak dengan alasan tercatat']
+  SELESAI [note: 'Dokumen fisik/arsip telah selesai diserahkan']
+}
+
+Enum HistoryTypeEnum {
+  CREATE [note: '+ baris dibuat']
+  UPDATE [note: '~ baris diperbarui']
+  DELETE [note: '- baris dihapus']
+}
+
+// ------------------------------------------------------
+// TABLES: ACCOUNTS & CORE
+// ------------------------------------------------------
+
+Table users {
+  id integer [pk, increment]
+  username varchar(150) [unique, not null, note: 'Username login unik (NIP atau identitas staf)']
+  password_hash varchar(255) [not null, note: 'Hash kata sandi menggunakan Argon2']
+  is_active boolean [not null, default: true, note: 'Status keaktifan akun pengguna']
+  is_staff boolean [not null, default: false, note: 'Akses ke Django Admin untuk konfigurasi']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+
+  indexes {
+    username [name: 'idx_users_username']
+  }
+}
+
+Table roles {
+  id integer [pk, increment]
+  name varchar(50) [unique, not null, note: 'Nama peran: Administrator, Guru, Wali Kelas, Kesiswaan, Tata Usaha, Pimpinan']
+  description varchar(255) [null]
+}
+
+Table user_roles {
+  user_id integer [not null, ref: > users.id]
+  role_id integer [not null, ref: > roles.id]
+
+  indexes {
+    (user_id, role_id) [pk]
+  }
+}
+
+Table activity_logs {
+  id integer [pk, increment]
+  actor_id integer [null, ref: > users.id, note: 'ID pengguna pelaku aktivitas, null jika aksi sistem']
+  action varchar(100) [not null, note: 'Aksi: LOGIN_SUCCESS, LOGIN_FAILED, LOGOUT, EXPORT_REPORT, dll']
+  resource_type varchar(50) [not null, note: 'Nama modul/entitas sasaran']
+  resource_id varchar(50) [null, note: 'ID objek sasaran']
+  request_id varchar(50) [null, note: 'Request ID pelacakan observability']
+  ip_address varchar(45) [null, note: 'Alamat IP klien yang tervalidasi proxy']
+  metadata text [null, note: 'Payload JSON ringkas non-sensitif']
+  created_at timestamp [not null, default: `now()`]
+
+  indexes {
+    (actor_id, created_at) [name: 'idx_activity_logs_actor']
+    (action, created_at) [name: 'idx_activity_logs_action']
+    request_id [name: 'idx_activity_logs_req_id']
+  }
+}
+
+// ------------------------------------------------------
+// TABLES: MASTER DATA
+// ------------------------------------------------------
+
+Table employees {
+  id integer [pk, increment]
+  user_id integer [unique, null, ref: > users.id, note: 'Opsional terhubung ke akun User jika memiliki hak akses web']
+  nip varchar(30) [unique, null, note: 'Nomor Induk Pegawai']
+  name varchar(150) [not null, note: 'Nama lengkap beserta gelar']
+  phone varchar(20) [null]
+  status EmployeeStatusEnum [not null, default: 'AKTIF']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+
+  indexes {
+    nip [name: 'idx_employees_nip']
+    name [name: 'idx_employees_name']
+  }
+}
+
+Table academic_years {
+  id integer [pk, increment]
+  name varchar(50) [unique, not null, note: 'Format: 2026/2027 Ganjil, 2026/2027 Genap']
+  start_date date [not null, note: 'Tanggal mulai tahun ajaran']
+  end_date date [not null, note: 'Tanggal selesai tahun ajaran']
+  is_active boolean [not null, default: false, note: 'Hanya satu tahun ajaran aktif secara bersamaan']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+
+  indexes {
+    is_active [name: 'idx_academic_years_active']
+  }
+}
+
+Table school_classes {
+  id integer [pk, increment]
+  academic_year_id integer [not null, ref: > academic_years.id]
+  name varchar(50) [not null, note: 'Nama rombel: X-A, XI-IPA-1, XII-IPS-2']
+  level integer [not null, note: 'Tingkat kelas: 10, 11, atau 12']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+
+  indexes {
+    (academic_year_id, name) [unique, name: 'uq_class_year_name']
+    academic_year_id [name: 'idx_classes_year']
+  }
+}
+
+Table students {
+  id integer [pk, increment]
+  student_number varchar(30) [unique, not null, note: 'Nomor Induk Siswa lokal atau NISN unik']
+  name varchar(150) [not null, note: 'Nama lengkap siswa']
+  gender GenderEnum [not null]
+  status StudentStatusEnum [not null, default: 'AKTIF']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+
+  indexes {
+    student_number [name: 'idx_students_number']
+    name [name: 'idx_students_name']
+    status [name: 'idx_students_status']
+  }
+}
+
+Table enrollments {
+  id integer [pk, increment]
+  student_id integer [not null, ref: > students.id]
+  class_id integer [not null, ref: > school_classes.id]
+  start_date date [not null, note: 'Tanggal mulai penempatan siswa di kelas']
+  end_date date [null, note: 'Tanggal selesai penempatan jika mutasi kelas, null jika aktif']
+  created_at timestamp [not null, default: `now()`]
+
+  indexes {
+    (student_id, class_id, start_date) [name: 'idx_enrollments_student_class']
+    (class_id, start_date, end_date) [name: 'idx_enrollments_class_period']
+  }
+}
+
+Table class_assignments {
+  id integer [pk, increment]
+  employee_id integer [not null, ref: > employees.id]
+  class_id integer [not null, ref: > school_classes.id]
+  role ClassAssignmentRoleEnum [not null, default: 'GURU_MAPEL']
+  start_date date [not null, note: 'Tanggal awal penugasan']
+  end_date date [null, note: 'Tanggal akhir penugasan, null jika aktif']
+  created_at timestamp [not null, default: `now()`]
+
+  indexes {
+    (employee_id, class_id, role) [name: 'idx_assignments_emp_class_role']
+    (class_id, role) [name: 'idx_assignments_class_role']
+  }
+}
+
+// ------------------------------------------------------
+// TABLES: ATTENDANCE
+// ------------------------------------------------------
+
+Table attendances {
+  id integer [pk, increment]
+  student_id integer [not null, ref: > students.id]
+  class_id integer [not null, ref: > school_classes.id]
+  date date [not null, note: 'Tanggal absensi (wajib <= tanggal berjalan)']
+  status AttendanceStatusEnum [not null, default: 'HADIR']
+  note varchar(255) [null, default: '', note: 'Catatan alasan sakit/izin atau keterangan']
+  recorded_by_id integer [not null, ref: > users.id, note: 'Pengguna yang mencatat transaksi']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+
+  indexes {
+    (student_id, class_id, date) [unique, name: 'uq_attendance_student_class_date']
+    (class_id, date) [name: 'idx_attendance_class_date']
+    (student_id, date) [name: 'idx_attendance_student_date']
+    date [name: 'idx_attendance_date']
+  }
+}
+
+Table historical_attendances {
+  history_id integer [pk, increment]
+  id integer [not null, note: 'ID referensi dari tabel attendances']
+  student_id integer [not null]
+  class_id integer [not null]
+  date date [not null]
+  status AttendanceStatusEnum [not null]
+  note varchar(255) [null]
+  recorded_by_id integer [not null]
+  history_user_id integer [null, ref: > users.id, note: 'Aktor yang melakukan create/update']
+  history_date timestamp [not null, default: `now()`]
+  history_type HistoryTypeEnum [not null]
+
+  indexes {
+    (id, history_date) [name: 'idx_hist_attendance_lookup']
+  }
+}
+
+// ------------------------------------------------------
+// TABLES: STUDENT AFFAIRS (KASUS KESISWAAN)
+// ------------------------------------------------------
+
+Table student_cases {
+  id integer [pk, increment]
+  student_id integer [not null, ref: > students.id]
+  title varchar(200) [not null, note: 'Judul ringkas kasus konseling kesiswaan']
+  summary text [not null, note: 'Ringkasan permasalahan dan latar belakang']
+  status CaseStatusEnum [not null, default: 'BARU']
+  assigned_to_id integer [null, ref: > employees.id, note: 'Staf kesiswaan/guru BK penanggung jawab']
+  version integer [not null, default: 1, note: 'Kolom kontrol konkurensi optimistik']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+
+  indexes {
+    student_id [name: 'idx_cases_student']
+    (status, created_at) [name: 'idx_cases_status_created']
+    assigned_to_id [name: 'idx_cases_assigned']
+  }
+}
+
+Table case_events {
+  id integer [pk, increment]
+  case_id integer [not null, ref: > student_cases.id]
+  action varchar(100) [not null, note: 'Aksi: MULAI_PENANGANAN, CATAT_TINDAKAN, SELESAIKAN, BATALKAN']
+  initial_status CaseStatusEnum [not null]
+  final_status CaseStatusEnum [not null]
+  note text [not null, note: 'Uraian tindakan konseling atau alasan penyelesaian']
+  actor_id integer [not null, ref: > users.id, note: 'Petugas yang melakukan aksi tindakan']
+  created_at timestamp [not null, default: `now()`]
+
+  indexes {
+    (case_id, created_at) [name: 'idx_case_events_case_created']
+  }
+}
+
+// ------------------------------------------------------
+// TABLES: ADMINISTRATION & PRIVATE DOCUMENTS (TATA USAHA)
+// ------------------------------------------------------
+
+Table service_types {
+  id integer [pk, increment]
+  code varchar(30) [unique, not null, note: 'Kode unik jenis layanan, misal SURAT_KETERANGAN_AKTIF']
+  name varchar(100) [not null, note: 'Nama resmi layanan administrasi persuratan']
+  description text [null]
+  requires_approval boolean [not null, default: true, note: 'Apakah mewajibkan persetujuan Kepala Sekolah']
+  is_active boolean [not null, default: true]
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+
+  indexes {
+    code [name: 'idx_service_types_code']
+  }
+}
+
+Table service_requests {
+  id integer [pk, increment]
+  request_number varchar(50) [unique, not null, note: 'Nomor unik permohonan surat']
+  service_type_id integer [not null, ref: > service_types.id]
+  applicant_name varchar(150) [not null, note: 'Nama pemohon surat']
+  applicant_phone varchar(20) [null]
+  student_id integer [null, ref: > students.id, note: 'Opsional terhubung ke data siswa jika permohonan atas nama siswa']
+  purpose text [not null, note: 'Keperluan pembuatan surat']
+  status ServiceRequestStatusEnum [not null, default: 'DIAJUKAN']
+  created_by_id integer [not null, ref: > users.id, note: 'Petugas Tata Usaha yang mencatat permohonan']
+  version integer [not null, default: 1, note: 'Kolom kontrol konkurensi optimistik']
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+
+  indexes {
+    request_number [name: 'idx_requests_number']
+    (status, created_at) [name: 'idx_requests_status_created']
+    service_type_id [name: 'idx_requests_type']
+  }
+}
+
+Table service_events {
+  id integer [pk, increment]
+  request_id integer [not null, ref: > service_requests.id]
+  action varchar(100) [not null, note: 'Aksi: PROSES, AJUKAN_PERSETUJUAN, SETUJUI, TOLAK, SELESAIKAN']
+  initial_status ServiceRequestStatusEnum [not null]
+  final_status ServiceRequestStatusEnum [not null]
+  note text [null, note: 'Catatan proses atau alasan penolakan tertulis']
+  actor_id integer [not null, ref: > users.id, note: 'Pengguna yang mengeksekusi tahapan proses']
+  created_at timestamp [not null, default: `now()`]
+
+  indexes {
+    (request_id, created_at) [name: 'idx_service_events_req_created']
+  }
+}
+
+Table documents {
+  id integer [pk, increment]
+  request_id integer [not null, ref: > service_requests.id]
+  storage_key varchar(100) [unique, not null, note: 'UUID acak penamaan berkas fisik di direktori privat']
+  original_filename varchar(255) [not null, note: 'Nama asli berkas saat diunggah']
+  mime_type varchar(100) [not null, note: 'MIME type terverifikasi dari magic bytes']
+  file_size integer [not null, note: 'Ukuran berkas dalam bytes (maksimal 5242880 bytes / 5 MB)']
+  uploaded_by_id integer [not null, ref: > users.id]
+  created_at timestamp [not null, default: `now()`]
+
+  indexes {
+    request_id [name: 'idx_documents_request']
+    storage_key [name: 'idx_documents_key']
+  }
+}
