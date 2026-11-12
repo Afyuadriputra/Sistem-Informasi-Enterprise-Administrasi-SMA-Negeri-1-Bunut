@@ -1,0 +1,2844 @@
+openapi: 3.1.0
+info:
+  title: API Sistem Informasi Enterprise Administrasi SMA Negeri 1 Bunut
+  version: 1.1.0
+  description: Kontrak API REST resmi untuk integrasi antarmuka web SPA dan layanan
+    backend Django Ninja (Baseline M0.2, 49 Operasi, 71 Skema). Menerapkan standar
+    Contract-First Development, otorisasi peran (RBAC), pembatasan akses berbasis
+    objek, dan penanganan konkurensi.
+servers:
+- url: http://localhost:8000/api
+  description: Lingkungan Development Lokal
+paths:
+  /auth/login:
+    post:
+      tags:
+      - Auth
+      summary: Masuk dan penerbitan token JWT
+      operationId: authLogin
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Autentikasi berhasil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Kredensial tidak valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: Terlalu banyak percobaan gagal (Rate Limit)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /auth/refresh:
+    post:
+      tags:
+      - Auth
+      summary: Pembaruan access token sesi
+      operationId: authRefresh
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Pasangan token baru diterbitkan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshResponse'
+        '401':
+          description: Refresh token kedaluwarsa atau telah dicabut
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /auth/logout:
+    post:
+      tags:
+      - Auth
+      summary: Mengakhiri sesi dan mencabut refresh token
+      operationId: authLogout
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+      responses:
+        '200':
+          description: Sesi berhasil diakhiri
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessageResponse'
+  /auth/me:
+    get:
+      tags:
+      - Auth
+      summary: Informasi profil pengguna dan penugasan peran
+      operationId: authMe
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Profil pengguna aktif
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          description: Tidak terautentikasi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /master/academic-years:
+    get:
+      tags:
+      - Master Data
+      summary: Daftar tahun ajaran
+      operationId: listAcademicYears
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/PageQuery'
+      - $ref: '#/components/parameters/PageSizeQuery'
+      - name: is_active
+        in: query
+        required: false
+        schema:
+          type: boolean
+        description: Saring tahun ajaran yang sedang aktif
+      responses:
+        '200':
+          description: Daftar tahun ajaran terpaginasi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcademicYearListResponse'
+    post:
+      tags:
+      - Master Data
+      summary: Tambah tahun ajaran baru
+      operationId: createAcademicYear
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcademicYearCreateRequest'
+      responses:
+        '201':
+          description: Tahun ajaran berhasil dibuat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcademicYearItem'
+        '422':
+          description: Kesalahan validasi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /master/classes:
+    get:
+      tags:
+      - Master Data
+      summary: Daftar kelas rombel
+      operationId: listClasses
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: academic_year_id
+        in: query
+        required: false
+        schema:
+          type: integer
+      - $ref: '#/components/parameters/PageQuery'
+      - $ref: '#/components/parameters/PageSizeQuery'
+      responses:
+        '200':
+          description: Daftar kelas terpaginasi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassListResponse'
+    post:
+      tags:
+      - Master Data
+      summary: Buat rombel kelas baru
+      operationId: createClass
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassCreateRequest'
+      responses:
+        '201':
+          description: Kelas berhasil dibuat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassItem'
+  /master/students:
+    get:
+      tags:
+      - Master Data
+      summary: Daftar data siswa
+      operationId: listStudents
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: search
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/StudentStatusEnum'
+      - $ref: '#/components/parameters/PageQuery'
+      - $ref: '#/components/parameters/PageSizeQuery'
+      - name: class_id
+        in: query
+        required: false
+        schema:
+          type: integer
+        description: Saring siswa terdaftar pada kelas rombel tertentu
+      responses:
+        '200':
+          description: Daftar siswa terpaginasi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentListResponse'
+    post:
+      tags:
+      - Master Data
+      summary: Tambah siswa baru
+      operationId: createStudent
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentCreateRequest'
+      responses:
+        '201':
+          description: Siswa berhasil ditambahkan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentItem'
+  /master/students/{id}:
+    get:
+      tags:
+      - Master Data
+      summary: Detail profil siswa
+      operationId: getStudentDetail
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Data lengkap siswa beserta riwayat penempatan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentDetailResponse'
+        '404':
+          description: Siswa tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    patch:
+      tags:
+      - Master Data
+      summary: Perbarui profil data siswa
+      operationId: updateStudent
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentUpdateRequest'
+      responses:
+        '200':
+          description: Data siswa berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentItem'
+  /master/enrollments:
+    post:
+      tags:
+      - Master Data
+      summary: Tempatkan siswa ke dalam kelas
+      operationId: createEnrollment
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnrollmentCreateRequest'
+      responses:
+        '201':
+          description: Penempatan siswa berhasil disimpan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollmentItem'
+    get:
+      tags:
+      - Master Data
+      summary: Daftar penempatan siswa di kelas rombel
+      operationId: listEnrollments
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: class_id
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: student_id
+        in: query
+        required: false
+        schema:
+          type: integer
+      - $ref: '#/components/parameters/PageQuery'
+      - $ref: '#/components/parameters/PageSizeQuery'
+      responses:
+        '200':
+          description: Daftar penempatan siswa terpaginasi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollmentListResponse'
+  /master/assignments:
+    post:
+      tags:
+      - Master Data
+      summary: Tetapkan penugasan guru pengampu atau wali kelas
+      operationId: createClassAssignment
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassAssignmentCreateRequest'
+      responses:
+        '201':
+          description: Penugasan berhasil disimpan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassAssignmentItem'
+    get:
+      tags:
+      - Master Data
+      summary: Daftar penugasan guru pengampu dan wali kelas
+      operationId: listClassAssignments
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: class_id
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: employee_id
+        in: query
+        required: false
+        schema:
+          type: integer
+      - $ref: '#/components/parameters/PageQuery'
+      - $ref: '#/components/parameters/PageSizeQuery'
+      - name: role
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - GURU_MAPEL
+          - WALI_KELAS
+        description: Saring peran penugasan guru
+      responses:
+        '200':
+          description: Daftar penugasan guru terpaginasi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassAssignmentListResponse'
+  /attendance/roster:
+    get:
+      tags:
+      - Attendance
+      summary: Ambil daftar siswa aktif kelas pada tanggal tertentu untuk form absensi
+      operationId: getAttendanceRoster
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: class_id
+        in: query
+        required: true
+        schema:
+          type: integer
+      - name: date
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Roster siswa aktif beserta status absensi tersimpan (jika ada)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendanceRosterResponse'
+        '403':
+          description: Guru tidak ditugaskan pada kelas terkait
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /attendance/bulk:
+    post:
+      tags:
+      - Attendance
+      summary: Simpan catatan kehadiran kelas harian secara atomik
+      operationId: saveAttendanceBulk
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendanceBulkRequest'
+      responses:
+        '200':
+          description: Kehadiran batch berhasil disimpan secara atomik
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendanceBulkResponse'
+        '403':
+          description: Tidak memiliki penugasan aktif di kelas pada tanggal tersebut
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: Data baris tidak valid atau terdapat siswa tidak terdaftar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: Konflik konkurensi pencatatan presensi massal atau data telah
+            diperbarui pengguna lain
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /attendance:
+    get:
+      tags:
+      - Attendance
+      summary: Rekapitulasi absensi terfilter periode dan kelas
+      operationId: getAttendanceRecap
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: class_id
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: start_date
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: end_date
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Rekapitulasi kehadiran kelas dan daftar siswa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendanceRecapResponse'
+  /student-affairs/cases:
+    get:
+      tags:
+      - Student Affairs
+      summary: Daftar antrean kasus kesiswaan dalam cakupan pengguna
+      operationId: listStudentCases
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/CaseStatusEnum'
+      - $ref: '#/components/parameters/PageQuery'
+      - $ref: '#/components/parameters/PageSizeQuery'
+      - name: student_id
+        in: query
+        required: false
+        schema:
+          type: integer
+        description: Saring kasus berdasarkan ID siswa
+      - name: search
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Cari nomor kasus atau ringkasan masalah
+      responses:
+        '200':
+          description: Daftar kasus terpaginasi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentCaseListResponse'
+    post:
+      tags:
+      - Student Affairs
+      summary: Buat kasus kesiswaan baru
+      operationId: createStudentCase
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentCaseCreateRequest'
+      responses:
+        '201':
+          description: Kasus berhasil dicatat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentCaseItem'
+  /student-affairs/cases/{id}:
+    get:
+      tags:
+      - Student Affairs
+      summary: Detail kronologis kasus kesiswaan dan histori tindakan
+      operationId: getStudentCaseDetail
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Detail kasus dan timeline tindakan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentCaseDetailResponse'
+        '403':
+          description: Tidak memiliki wewenang membaca detail kasus siswa ini
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /student-affairs/cases/{id}/transitions:
+    post:
+      tags:
+      - Student Affairs
+      summary: Perbarui status kasus dan rekam tindakan konseling
+      operationId: transitionStudentCase
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CaseTransitionRequest'
+      responses:
+        '200':
+          description: Status kasus berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseTransitionResponse'
+        '409':
+          description: Terjadi konflik versi (Optimistic Locking)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /administration/service-types:
+    get:
+      tags:
+      - Administration
+      summary: Daftar jenis layanan administrasi tata usaha yang aktif
+      operationId: listServiceTypes
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Daftar jenis layanan administrasi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceTypeListResponse'
+    post:
+      tags:
+      - Administration
+      summary: Tambah master jenis layanan persuratan baru
+      operationId: createServiceType
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceTypeCreateRequest'
+      responses:
+        '201':
+          description: Jenis layanan berhasil dibuat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceTypeItem'
+  /administration/requests:
+    get:
+      tags:
+      - Administration
+      summary: Daftar antrean permohonan surat tata usaha
+      operationId: listServiceRequests
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/ServiceRequestStatusEnum'
+      - $ref: '#/components/parameters/PageQuery'
+      - $ref: '#/components/parameters/PageSizeQuery'
+      - name: service_type_id
+        in: query
+        required: false
+        schema:
+          type: integer
+        description: Saring permohonan berdasarkan ID jenis layanan
+      - name: search
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Cari nomor pelacakan atau nama pemohon
+      responses:
+        '200':
+          description: Antrean permohonan terpaginasi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequestListResponse'
+    post:
+      tags:
+      - Administration
+      summary: Buat permohonan persuratan baru
+      operationId: createServiceRequest
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRequestCreateRequest'
+      responses:
+        '201':
+          description: Permohonan surat berhasil dibuat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequestItem'
+  /administration/requests/{id}:
+    get:
+      tags:
+      - Administration
+      summary: Detail data permohonan surat dan riwayat proses
+      operationId: getServiceRequestDetail
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Detail permohonan, berkas lampiran, dan timeline persetujuan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequestDetailResponse'
+  /administration/requests/{id}/transitions:
+    post:
+      tags:
+      - Administration
+      summary: Transisi status pemrosesan atau persetujuan permohonan
+      operationId: transitionServiceRequest
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceTransitionRequest'
+      responses:
+        '200':
+          description: Status permohonan berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceTransitionResponse'
+        '409':
+          description: Terjadi konflik versi data (Optimistic Locking)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /administration/requests/{id}/documents:
+    post:
+      tags:
+      - Administration
+      summary: Unggah lampiran berkas dokumen privat
+      operationId: uploadRequestDocument
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+              - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Berkas PDF/JPG/PNG maksimal 5 MB
+      responses:
+        '201':
+          description: Berkas berhasil diunggah dan disimpan privat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentItem'
+        '422':
+          description: Format berkas dilarang atau ukuran melebihi batas 5MB
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /administration/documents:
+    get:
+      tags:
+      - Administration
+      summary: Daftar seluruh arsip berkas terverifikasi
+      operationId: listArchivedDocuments
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: search
+        in: query
+        required: false
+        schema:
+          type: string
+      - $ref: '#/components/parameters/PageQuery'
+      - $ref: '#/components/parameters/PageSizeQuery'
+      - name: service_type_id
+        in: query
+        required: false
+        schema:
+          type: integer
+        description: Saring arsip dokumen berdasarkan ID jenis layanan
+      responses:
+        '200':
+          description: Daftar dokumen terpaginasi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentListResponse'
+  /administration/documents/{id}/download:
+    get:
+      tags:
+      - Administration
+      summary: Unduh berkas privat dengan validasi otorisasi
+      operationId: downloadPrivateDocument
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Aliran berkas privat (File Stream)
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '403':
+          description: Tidak memiliki hak akses mengunduh berkas ini
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /reports/dashboard:
+    get:
+      tags:
+      - Reports
+      summary: Ringkasan metrik dashboard teragregasi sesuai peran
+      operationId: getDashboardMetrics
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: start_date
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: end_date
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Ringkasan statistik dan antrean tugas peran
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardMetricsResponse'
+  /reports/attendance.xlsx:
+    get:
+      tags:
+      - Reports
+      summary: Ekspor rekapitulasi kehadiran ke spreadsheet Excel
+      operationId: exportAttendanceExcel
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: class_id
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: start_date
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: end_date
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Berkas unduhan Microsoft Excel
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+  /reports/administration.pdf:
+    get:
+      tags:
+      - Reports
+      summary: Ekspor laporan permohonan persuratan ke berkas PDF
+      operationId: exportAdministrationPdf
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: start_date
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: end_date
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: service_type_id
+        in: query
+        required: false
+        schema:
+          type: integer
+        description: Saring laporan administrasi berdasarkan jenis layanan
+      responses:
+        '200':
+          description: Berkas dokumen PDF
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+  /audit-logs:
+    get:
+      tags:
+      - Audit
+      summary: Penelusuran log aktivitas audit sistem
+      operationId: listAuditLogs
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: action
+        in: query
+        required: false
+        schema:
+          type: string
+      - $ref: '#/components/parameters/PageQuery'
+      - $ref: '#/components/parameters/PageSizeQuery'
+      - name: user_id
+        in: query
+        required: false
+        schema:
+          type: integer
+        description: Saring log audit berdasarkan ID pengguna pelaksana
+      - name: start_date
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+        description: Batas awal rentang tanggal log audit
+      - name: end_date
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+        description: Batas akhir rentang tanggal log audit
+      responses:
+        '200':
+          description: Daftar log audit terpaginasi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogListResponse'
+        '403':
+          description: Akses audit log ditolak (khusus Administrator)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /accounts/users:
+    get:
+      tags:
+      - Accounts
+      summary: Daftar pengguna sistem
+      operationId: listUsers
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/PageQuery'
+      - $ref: '#/components/parameters/PageSizeQuery'
+      - name: search
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Cari pengguna berdasarkan username
+      - name: role
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Saring pengguna berdasarkan kode peran
+      - name: is_active
+        in: query
+        required: false
+        schema:
+          type: boolean
+        description: Saring pengguna berdasarkan status keaktifan akun
+      responses:
+        '200':
+          description: Daftar pengguna terpaginasi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+        '403':
+          description: Hanya Administrator yang memiliki akses
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      tags:
+      - Accounts
+      summary: Tambah akun pengguna baru
+      operationId: createUser
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+      responses:
+        '201':
+          description: Akun pengguna berhasil dibuat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserItem'
+        '422':
+          description: Validasi gagal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /accounts/users/{id}:
+    get:
+      tags:
+      - Accounts
+      summary: Detail akun pengguna
+      operationId: getUserDetail
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Detail akun pengguna
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserItem'
+        '404':
+          description: Pengguna tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    patch:
+      tags:
+      - Accounts
+      summary: Perbarui status atau peran pengguna
+      operationId: updateUser
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+      responses:
+        '200':
+          description: Pengguna berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserItem'
+  /accounts/roles:
+    get:
+      tags:
+      - Accounts
+      summary: Daftar peran pengguna sistem
+      operationId: listRoles
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Daftar master peran sistem
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleListResponse'
+  /master/employees:
+    get:
+      tags:
+      - Master Data
+      summary: Daftar pegawai dan guru
+      operationId: listEmployees
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: search
+        in: query
+        required: false
+        schema:
+          type: string
+      - $ref: '#/components/parameters/PageQuery'
+      - $ref: '#/components/parameters/PageSizeQuery'
+      responses:
+        '200':
+          description: Daftar pegawai terpaginasi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeListResponse'
+    post:
+      tags:
+      - Master Data
+      summary: Tambah pegawai/guru baru
+      operationId: createEmployee
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeCreateRequest'
+      responses:
+        '201':
+          description: Pegawai berhasil ditambahkan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeItem'
+  /master/academic-years/{id}:
+    patch:
+      tags:
+      - Master Data
+      summary: Perbarui data tahun ajaran sekolah
+      operationId: updateAcademicYear
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: ID unik tahun ajaran
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcademicYearUpdateRequest'
+      responses:
+        '200':
+          description: Tahun ajaran berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcademicYearItem'
+        '404':
+          description: Tahun ajaran tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: Validasi data pembaruan gagal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /master/classes/{id}:
+    patch:
+      tags:
+      - Master Data
+      summary: Perbarui data kelas rombel
+      operationId: updateClass
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: ID unik kelas rombel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassUpdateRequest'
+      responses:
+        '200':
+          description: Kelas rombel berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassItem'
+        '404':
+          description: Kelas rombel tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: Validasi data pembaruan gagal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /master/employees/{id}:
+    patch:
+      tags:
+      - Master Data
+      summary: Perbarui biodata atau status pegawai
+      operationId: updateEmployee
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: ID unik pegawai
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeUpdateRequest'
+      responses:
+        '200':
+          description: Data pegawai berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeItem'
+        '404':
+          description: Pegawai tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: Validasi data pembaruan gagal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /administration/service-types/{id}:
+    patch:
+      tags:
+      - Administration
+      summary: Perbarui jenis layanan administrasi persuratan
+      operationId: updateServiceType
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: ID unik jenis layanan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceTypeUpdateRequest'
+      responses:
+        '200':
+          description: Jenis layanan berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceTypeItem'
+        '404':
+          description: Jenis layanan tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: Validasi data pembaruan gagal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /master/enrollments/{id}:
+    patch:
+      tags:
+      - Master Data
+      summary: Perbarui periode penempatan siswa (pengakhiran rombel)
+      operationId: updateEnrollment
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: ID unik penempatan rombel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnrollmentUpdateRequest'
+      responses:
+        '200':
+          description: Penempatan rombel berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollmentItem'
+        '404':
+          description: Penempatan rombel tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: Validasi data pembaruan gagal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /master/assignments/{id}:
+    patch:
+      tags:
+      - Master Data
+      summary: Perbarui periode penugasan guru di kelas (pengakhiran penugasan)
+      operationId: updateClassAssignment
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: ID unik penugasan guru
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassAssignmentUpdateRequest'
+      responses:
+        '200':
+          description: Penugasan guru berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassAssignmentItem'
+        '404':
+          description: Penugasan guru tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '422':
+          description: Validasi data pembaruan gagal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Masukkan token access JWT yang sah.
+  parameters:
+    PageQuery:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 1
+      description: Nomor halaman data
+    PageSizeQuery:
+      name: page_size
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 20
+      description: Jumlah baris data per halaman
+  schemas:
+    ErrorEnvelope:
+      type: object
+      required:
+      - code
+      - message
+      - request_id
+      properties:
+        code:
+          type: string
+          example: VALIDATION_ERROR
+        message:
+          type: string
+          example: Data yang dimasukkan tidak memenuhi ketentuan.
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+        request_id:
+          type: string
+          example: req-1234567890abcdef
+    SuccessMessageResponse:
+      type: object
+      required:
+      - message
+      properties:
+        message:
+          type: string
+          example: Operasi berhasil diselesaikan.
+    LoginRequest:
+      type: object
+      required:
+      - username
+      - password
+      properties:
+        username:
+          type: string
+          example: guru_19850101
+        password:
+          type: string
+          format: password
+          example: RahasiaSman1Bunut!
+    LoginResponse:
+      type: object
+      required:
+      - access_token
+      - refresh_token
+      - token_type
+      - expires_in
+      properties:
+        access_token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refresh_token:
+          type: string
+          example: def50200abcd...
+        token_type:
+          type: string
+          example: Bearer
+        expires_in:
+          type: integer
+          example: 900
+    RefreshRequest:
+      type: object
+      required:
+      - refresh_token
+      properties:
+        refresh_token:
+          type: string
+    RefreshResponse:
+      type: object
+      required:
+      - access_token
+      - refresh_token
+      - token_type
+      - expires_in
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          example: Bearer
+        expires_in:
+          type: integer
+          example: 900
+    LogoutRequest:
+      type: object
+      required:
+      - refresh_token
+      properties:
+        refresh_token:
+          type: string
+    UserProfileResponse:
+      type: object
+      required:
+      - id
+      - username
+      - name
+      - roles
+      properties:
+        id:
+          type: integer
+          example: 1
+        username:
+          type: string
+          example: guru_19850101
+        name:
+          type: string
+          example: Budi Santoso, S.Pd.
+        employee_id:
+          type: integer
+          nullable: true
+          example: 10
+        roles:
+          type: array
+          items:
+            type: string
+          example:
+          - Guru
+          - Wali Kelas
+        assigned_classes:
+          type: array
+          items:
+            type: object
+            properties:
+              class_id:
+                type: integer
+              class_name:
+                type: string
+              role:
+                type: string
+    GenderEnum:
+      type: string
+      enum:
+      - LAKI_LAKI
+      - PEREMPUAN
+    StudentStatusEnum:
+      type: string
+      enum:
+      - AKTIF
+      - MUTASI_KELUAR
+      - LULUS
+      - NONAKTIF
+    AttendanceStatusEnum:
+      type: string
+      enum:
+      - HADIR
+      - SAKIT
+      - IZIN
+      - ALPA
+    CaseStatusEnum:
+      type: string
+      enum:
+      - BARU
+      - DIPROSES
+      - SELESAI
+      - DIBATALKAN
+    ServiceRequestStatusEnum:
+      type: string
+      enum:
+      - DIAJUKAN
+      - DIPROSES
+      - MENUNGGU_PERSETUJUAN
+      - DISETUJUI
+      - DITOLAK
+      - SELESAI
+    AcademicYearItem:
+      type: object
+      required:
+      - id
+      - name
+      - start_date
+      - end_date
+      - is_active
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          example: 2026/2027 Ganjil
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        is_active:
+          type: boolean
+    AcademicYearCreateRequest:
+      type: object
+      required:
+      - name
+      - start_date
+      - end_date
+      properties:
+        name:
+          type: string
+          example: 2026/2027 Ganjil
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        is_active:
+          type: boolean
+          default: false
+    AcademicYearListResponse:
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AcademicYearItem'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+    ClassItem:
+      type: object
+      required:
+      - id
+      - academic_year_id
+      - name
+      - level
+      properties:
+        id:
+          type: integer
+        academic_year_id:
+          type: integer
+        academic_year_name:
+          type: string
+        name:
+          type: string
+          example: X-A
+        level:
+          type: integer
+          example: 10
+    ClassCreateRequest:
+      type: object
+      required:
+      - academic_year_id
+      - name
+      - level
+      properties:
+        academic_year_id:
+          type: integer
+        name:
+          type: string
+          example: X-A
+        level:
+          type: integer
+          example: 10
+    ClassListResponse:
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClassItem'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+    StudentItem:
+      type: object
+      required:
+      - id
+      - student_number
+      - name
+      - gender
+      - status
+      properties:
+        id:
+          type: integer
+        student_number:
+          type: string
+          example: '20261001'
+        name:
+          type: string
+          example: Ahmad Fauzi
+        gender:
+          $ref: '#/components/schemas/GenderEnum'
+        status:
+          $ref: '#/components/schemas/StudentStatusEnum'
+        current_class_name:
+          type: string
+          nullable: true
+          example: X-A
+    StudentCreateRequest:
+      type: object
+      required:
+      - student_number
+      - name
+      - gender
+      properties:
+        student_number:
+          type: string
+          example: '20261001'
+        name:
+          type: string
+          example: Ahmad Fauzi
+        gender:
+          $ref: '#/components/schemas/GenderEnum'
+        status:
+          $ref: '#/components/schemas/StudentStatusEnum'
+          default: AKTIF
+    StudentDetailResponse:
+      type: object
+      required:
+      - id
+      - student_number
+      - name
+      - gender
+      - status
+      properties:
+        id:
+          type: integer
+        student_number:
+          type: string
+        name:
+          type: string
+        gender:
+          $ref: '#/components/schemas/GenderEnum'
+        status:
+          $ref: '#/components/schemas/StudentStatusEnum'
+        enrollments:
+          type: array
+          items:
+            type: object
+            properties:
+              class_id:
+                type: integer
+              class_name:
+                type: string
+              start_date:
+                type: string
+                format: date
+              end_date:
+                type: string
+                format: date
+                nullable: true
+    StudentListResponse:
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/StudentItem'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+    EnrollmentCreateRequest:
+      type: object
+      required:
+      - student_id
+      - class_id
+      - start_date
+      properties:
+        student_id:
+          type: integer
+        class_id:
+          type: integer
+        start_date:
+          type: string
+          format: date
+    EnrollmentItem:
+      type: object
+      required:
+      - id
+      - student_id
+      - class_id
+      - start_date
+      properties:
+        id:
+          type: integer
+        student_id:
+          type: integer
+        class_id:
+          type: integer
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+          nullable: true
+    ClassAssignmentCreateRequest:
+      type: object
+      required:
+      - employee_id
+      - class_id
+      - role
+      - start_date
+      properties:
+        employee_id:
+          type: integer
+        class_id:
+          type: integer
+        role:
+          type: string
+          enum:
+          - GURU_MAPEL
+          - WALI_KELAS
+        start_date:
+          type: string
+          format: date
+    ClassAssignmentItem:
+      type: object
+      required:
+      - id
+      - employee_id
+      - class_id
+      - role
+      - start_date
+      properties:
+        id:
+          type: integer
+        employee_id:
+          type: integer
+        class_id:
+          type: integer
+        role:
+          type: string
+        start_date:
+          type: string
+          format: date
+    AttendanceRosterItem:
+      type: object
+      required:
+      - student_id
+      - student_number
+      - student_name
+      properties:
+        student_id:
+          type: integer
+        student_number:
+          type: string
+        student_name:
+          type: string
+        current_status:
+          $ref: '#/components/schemas/AttendanceStatusEnum'
+          nullable: true
+        current_note:
+          type: string
+          nullable: true
+    AttendanceRosterResponse:
+      type: object
+      required:
+      - class_id
+      - class_name
+      - date
+      - students
+      properties:
+        class_id:
+          type: integer
+        class_name:
+          type: string
+        date:
+          type: string
+          format: date
+        is_already_recorded:
+          type: boolean
+        students:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttendanceRosterItem'
+    AttendanceBulkItem:
+      type: object
+      required:
+      - student_id
+      - status
+      properties:
+        student_id:
+          type: integer
+        status:
+          $ref: '#/components/schemas/AttendanceStatusEnum'
+        note:
+          type: string
+          default: ''
+    AttendanceBulkRequest:
+      type: object
+      required:
+      - class_id
+      - date
+      - items
+      properties:
+        class_id:
+          type: integer
+        date:
+          type: string
+          format: date
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttendanceBulkItem'
+    AttendanceBulkResponse:
+      type: object
+      required:
+      - class_id
+      - date
+      - saved_count
+      - message
+      properties:
+        class_id:
+          type: integer
+        date:
+          type: string
+          format: date
+        saved_count:
+          type: integer
+        message:
+          type: string
+    AttendanceRecapResponse:
+      type: object
+      required:
+      - summary
+      - student_recaps
+      properties:
+        summary:
+          type: object
+          properties:
+            total_students:
+              type: integer
+            hadir_pct:
+              type: number
+            sakit_count:
+              type: integer
+            izin_count:
+              type: integer
+            alpa_count:
+              type: integer
+        student_recaps:
+          type: array
+          items:
+            type: object
+            properties:
+              student_id:
+                type: integer
+              student_number:
+                type: string
+              student_name:
+                type: string
+              hadir:
+                type: integer
+              sakit:
+                type: integer
+              izin:
+                type: integer
+              alpa:
+                type: integer
+              attention_needed:
+                type: boolean
+    StudentCaseItem:
+      type: object
+      required:
+      - id
+      - student_id
+      - student_name
+      - title
+      - status
+      - version
+      - created_at
+      properties:
+        id:
+          type: integer
+        student_id:
+          type: integer
+        student_number:
+          type: string
+        student_name:
+          type: string
+        class_name:
+          type: string
+        title:
+          type: string
+        status:
+          $ref: '#/components/schemas/CaseStatusEnum'
+        assigned_to_name:
+          type: string
+          nullable: true
+        version:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+    StudentCaseCreateRequest:
+      type: object
+      required:
+      - student_id
+      - title
+      - summary
+      properties:
+        student_id:
+          type: integer
+        title:
+          type: string
+          example: Konseling Ketidakhadiran Berulang
+        summary:
+          type: string
+          example: Siswa telah tercatat Alpa selama 4 hari berturut-turut pada bulan
+            berjalan.
+        assigned_to_id:
+          type: integer
+          nullable: true
+    StudentCaseDetailResponse:
+      type: object
+      required:
+      - id
+      - student_id
+      - title
+      - summary
+      - status
+      - version
+      - created_at
+      - events
+      properties:
+        id:
+          type: integer
+        student_id:
+          type: integer
+        student_name:
+          type: string
+        student_number:
+          type: string
+        class_name:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        status:
+          $ref: '#/components/schemas/CaseStatusEnum'
+        assigned_to_id:
+          type: integer
+          nullable: true
+        assigned_to_name:
+          type: string
+          nullable: true
+        version:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        events:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              action:
+                type: string
+              initial_status:
+                type: string
+              final_status:
+                type: string
+              note:
+                type: string
+              actor_name:
+                type: string
+              created_at:
+                type: string
+                format: date-time
+    CaseTransitionRequest:
+      type: object
+      required:
+      - action
+      - note
+      - expected_version
+      properties:
+        action:
+          type: string
+          enum:
+          - MULAI_PENANGANAN
+          - CATAT_TINDAKAN
+          - SELESAIKAN
+          - BATALKAN
+        note:
+          type: string
+          example: Menghubungi orang tua siswa dan menyepakati program bimbingan belajar.
+        expected_version:
+          type: integer
+          example: 1
+    CaseTransitionResponse:
+      type: object
+      required:
+      - id
+      - status
+      - version
+      - message
+      properties:
+        id:
+          type: integer
+        status:
+          $ref: '#/components/schemas/CaseStatusEnum'
+        version:
+          type: integer
+          example: 2
+        message:
+          type: string
+    StudentCaseListResponse:
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/StudentCaseItem'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+    ServiceTypeItem:
+      type: object
+      required:
+      - id
+      - code
+      - name
+      - requires_approval
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+          example: SURAT_KETERANGAN_AKTIF
+        name:
+          type: string
+          example: Surat Keterangan Siswa Aktif
+        description:
+          type: string
+          nullable: true
+        requires_approval:
+          type: boolean
+    ServiceTypeListResponse:
+      type: object
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceTypeItem'
+    ServiceRequestItem:
+      type: object
+      required:
+      - id
+      - request_number
+      - service_type_name
+      - applicant_name
+      - status
+      - version
+      - created_at
+      properties:
+        id:
+          type: integer
+        request_number:
+          type: string
+          example: REQ/2026/11/0001
+        service_type_name:
+          type: string
+          example: Surat Keterangan Siswa Aktif
+        applicant_name:
+          type: string
+          example: Hendra Wijaya (Orang Tua Siswa)
+        student_name:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/ServiceRequestStatusEnum'
+        version:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+    ServiceRequestCreateRequest:
+      type: object
+      required:
+      - service_type_id
+      - applicant_name
+      - purpose
+      properties:
+        service_type_id:
+          type: integer
+        applicant_name:
+          type: string
+          example: Hendra Wijaya
+        applicant_phone:
+          type: string
+          example: 08123456789
+        student_id:
+          type: integer
+          nullable: true
+        purpose:
+          type: string
+          example: Pengajuan tunjangan anak PNS kantor dinas
+    ServiceRequestDetailResponse:
+      type: object
+      required:
+      - id
+      - request_number
+      - service_type_id
+      - service_type_name
+      - applicant_name
+      - purpose
+      - status
+      - version
+      - created_at
+      - documents
+      - events
+      properties:
+        id:
+          type: integer
+        request_number:
+          type: string
+        service_type_id:
+          type: integer
+        service_type_name:
+          type: string
+        applicant_name:
+          type: string
+        applicant_phone:
+          type: string
+          nullable: true
+        student_id:
+          type: integer
+          nullable: true
+        student_name:
+          type: string
+          nullable: true
+        purpose:
+          type: string
+        status:
+          $ref: '#/components/schemas/ServiceRequestStatusEnum'
+        version:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentItem'
+        events:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              action:
+                type: string
+              initial_status:
+                type: string
+              final_status:
+                type: string
+              note:
+                type: string
+                nullable: true
+              actor_name:
+                type: string
+              created_at:
+                type: string
+                format: date-time
+    ServiceTransitionRequest:
+      type: object
+      required:
+      - action
+      - expected_version
+      properties:
+        action:
+          type: string
+          enum:
+          - PROSES
+          - AJUKAN_PERSETUJUAN
+          - SETUJUI
+          - TOLAK
+          - SELESAIKAN
+        note:
+          type: string
+          nullable: true
+          example: Berkas permohonan tervalidasi lengkap dan telah disetujui.
+        expected_version:
+          type: integer
+          example: 1
+    ServiceTransitionResponse:
+      type: object
+      required:
+      - id
+      - status
+      - version
+      - message
+      properties:
+        id:
+          type: integer
+        status:
+          $ref: '#/components/schemas/ServiceRequestStatusEnum'
+        version:
+          type: integer
+          example: 2
+        message:
+          type: string
+    ServiceRequestListResponse:
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceRequestItem'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+    DocumentItem:
+      type: object
+      required:
+      - id
+      - original_filename
+      - mime_type
+      - file_size
+      - created_at
+      properties:
+        id:
+          type: integer
+        request_id:
+          type: integer
+        request_number:
+          type: string
+        original_filename:
+          type: string
+          example: scan_kartu_keluarga.pdf
+        mime_type:
+          type: string
+          example: application/pdf
+        file_size:
+          type: integer
+          example: 1048576
+        created_at:
+          type: string
+          format: date-time
+    DocumentListResponse:
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentItem'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+    DashboardMetricsResponse:
+      type: object
+      required:
+      - role_scope
+      - generated_at
+      - metrics
+      properties:
+        role_scope:
+          type: string
+          example: Guru
+        generated_at:
+          type: string
+          format: date-time
+        metrics:
+          type: object
+          properties:
+            attendance_summary:
+              type: object
+              properties:
+                recorded_today:
+                  type: boolean
+                attendance_rate_pct:
+                  type: number
+            pending_cases_count:
+              type: integer
+            pending_requests_count:
+              type: integer
+            active_students_count:
+              type: integer
+    AuditLogItem:
+      type: object
+      required:
+      - id
+      - action
+      - resource_type
+      - created_at
+      properties:
+        id:
+          type: integer
+        actor_username:
+          type: string
+          nullable: true
+          example: admin_tu
+        action:
+          type: string
+          example: LOGIN_SUCCESS
+        resource_type:
+          type: string
+          example: accounts
+        resource_id:
+          type: string
+          nullable: true
+        request_id:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    AuditLogListResponse:
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLogItem'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+    UserItem:
+      type: object
+      required:
+      - id
+      - username
+      - is_active
+      - is_staff
+      - roles
+      - created_at
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        is_active:
+          type: boolean
+        is_staff:
+          type: boolean
+        roles:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+    UserListResponse:
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserItem'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+    UserCreateRequest:
+      type: object
+      required:
+      - username
+      - password
+      - roles
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        is_active:
+          type: boolean
+          default: true
+    UserUpdateRequest:
+      type: object
+      properties:
+        is_active:
+          type: boolean
+        roles:
+          type: array
+          items:
+            type: string
+    RoleItem:
+      type: object
+      required:
+      - id
+      - name
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+    RoleListResponse:
+      type: object
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleItem'
+    EmployeeItem:
+      type: object
+      required:
+      - id
+      - name
+      - status
+      - created_at
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+          nullable: true
+        nip:
+          type: string
+          nullable: true
+        name:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum:
+          - AKTIF
+          - CUTI
+          - NONAKTIF
+        created_at:
+          type: string
+          format: date-time
+    EmployeeListResponse:
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmployeeItem'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+    EmployeeCreateRequest:
+      type: object
+      required:
+      - name
+      properties:
+        user_id:
+          type: integer
+          nullable: true
+        nip:
+          type: string
+          nullable: true
+        name:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum:
+          - AKTIF
+          - CUTI
+          - NONAKTIF
+          default: AKTIF
+    StudentUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        gender:
+          $ref: '#/components/schemas/GenderEnum'
+        status:
+          $ref: '#/components/schemas/StudentStatusEnum'
+    EnrollmentListResponse:
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnrollmentItem'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+    ClassAssignmentListResponse:
+      type: object
+      required:
+      - items
+      - total
+      - page
+      - page_size
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClassAssignmentItem'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+    ServiceTypeCreateRequest:
+      type: object
+      required:
+      - code
+      - name
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        requires_approval:
+          type: boolean
+          default: true
+        is_active:
+          type: boolean
+          default: true
+    AcademicYearUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: 2026/2027 Ganjil
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        is_active:
+          type: boolean
+    ClassUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: X-A
+        level:
+          type: integer
+          example: 10
+        academic_year_id:
+          type: integer
+    EmployeeUpdateRequest:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          nullable: true
+        nip:
+          type: string
+          nullable: true
+        name:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum:
+          - AKTIF
+          - CUTI
+          - NONAKTIF
+    ServiceTypeUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        requires_approval:
+          type: boolean
+        is_active:
+          type: boolean
+    EnrollmentUpdateRequest:
+      type: object
+      properties:
+        end_date:
+          type: string
+          format: date
+          nullable: true
+          description: Tanggal akhir penempatan kelas jika mutasi atau kenaikan kelas
+    ClassAssignmentUpdateRequest:
+      type: object
+      properties:
+        end_date:
+          type: string
+          format: date
+          nullable: true
+          description: Tanggal akhir penugasan guru di kelas
