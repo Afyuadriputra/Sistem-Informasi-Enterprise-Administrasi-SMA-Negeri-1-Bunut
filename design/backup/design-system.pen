@@ -1,0 +1,973 @@
+{
+  "version": "2.22",
+  "children": [
+    {
+      "type": "frame",
+      "id": "tOR0X",
+      "x": 0,
+      "y": 0,
+      "name": "UX-M1: Design System & Tokens (SMA Negeri 1 Bunut)",
+      "clip": true,
+      "width": 1440,
+      "fill": "#F5F7FA",
+      "layout": "vertical",
+      "gap": 28,
+      "padding": 32,
+      "children": [
+        {
+          "type": "frame",
+          "id": "CE8bB",
+          "name": "DS_Header",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 8,
+          "children": [
+            {
+              "type": "text",
+              "id": "R64qrv",
+              "name": "DS_Title",
+              "fill": "#173B63",
+              "content": "SISTEM INFORMASI ENTERPRISE ADMINISTRASI SMA NEGERI 1 BUNUT",
+              "fontFamily": "Inter",
+              "fontSize": 24,
+              "fontWeight": "bold"
+            },
+            {
+              "type": "text",
+              "id": "i3iDF",
+              "name": "DS_Subtitle",
+              "fill": "#475569",
+              "content": "Design System Foundations, Tokens, & Atomic Primitives (Institutional Navy & Teal)",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "jUdwG",
+          "name": "DS_ColorPaletteSection",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "cornerRadius": 10,
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 24,
+          "children": [
+            {
+              "type": "text",
+              "id": "Etnv2",
+              "name": "SecTitle_Colors",
+              "fill": "#172B42",
+              "content": "1. Brand & Semantic Color Tokens",
+              "fontFamily": "Inter",
+              "fontSize": 18,
+              "fontWeight": "semibold"
+            },
+            {
+              "type": "frame",
+              "id": "o3FRa",
+              "name": "ColorSwatchesRow",
+              "width": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "o4ey3",
+                  "name": "Swatch_Primary Navy",
+                  "width": 150,
+                  "cornerRadius": 6,
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "i5aD7",
+                      "name": "Box_Primary Navy",
+                      "width": 150,
+                      "height": 60,
+                      "fill": "#173B63",
+                      "cornerRadius": 6
+                    },
+                    {
+                      "type": "text",
+                      "id": "ZSjwo",
+                      "name": "Lbl_Primary Navy",
+                      "fill": "#172B42",
+                      "content": "Primary Navy",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "medium"
+                    },
+                    {
+                      "type": "text",
+                      "id": "ImOnB",
+                      "name": "Hex_Primary Navy",
+                      "fill": "#475569",
+                      "content": "#173B63",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "bouJu",
+                  "name": "Swatch_Navy Hover",
+                  "width": 150,
+                  "cornerRadius": 6,
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "D6zq5v",
+                      "name": "Box_Navy Hover",
+                      "width": 150,
+                      "height": 60,
+                      "fill": "#102D4D",
+                      "cornerRadius": 6
+                    },
+                    {
+                      "type": "text",
+                      "id": "VTDHz",
+                      "name": "Lbl_Navy Hover",
+                      "fill": "#172B42",
+                      "content": "Navy Hover",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "medium"
+                    },
+                    {
+                      "type": "text",
+                      "id": "CYMQ5",
+                      "name": "Hex_Navy Hover",
+                      "fill": "#475569",
+                      "content": "#102D4D",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "pYHud",
+                  "name": "Swatch_Accent Teal",
+                  "width": 150,
+                  "cornerRadius": 6,
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "x2FyI",
+                      "name": "Box_Accent Teal",
+                      "width": 150,
+                      "height": 60,
+                      "fill": "#12665C",
+                      "cornerRadius": 6
+                    },
+                    {
+                      "type": "text",
+                      "id": "sOwuI",
+                      "name": "Lbl_Accent Teal",
+                      "fill": "#172B42",
+                      "content": "Accent Teal",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "medium"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Hurqy",
+                      "name": "Hex_Accent Teal",
+                      "fill": "#475569",
+                      "content": "#12665C",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "AHrHk",
+                  "name": "Swatch_Surface White",
+                  "width": 150,
+                  "cornerRadius": 6,
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "KHERa",
+                      "name": "Box_Surface White",
+                      "width": 150,
+                      "height": 60,
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 6
+                    },
+                    {
+                      "type": "text",
+                      "id": "a5L2xM",
+                      "name": "Lbl_Surface White",
+                      "fill": "#172B42",
+                      "content": "Surface White",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "medium"
+                    },
+                    {
+                      "type": "text",
+                      "id": "tkeTd",
+                      "name": "Hex_Surface White",
+                      "fill": "#475569",
+                      "content": "#FFFFFF",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "U5U1Xn",
+                  "name": "Swatch_Canvas Bg",
+                  "width": 150,
+                  "cornerRadius": 6,
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "O1upsb",
+                      "name": "Box_Canvas Bg",
+                      "width": 150,
+                      "height": 60,
+                      "fill": "#F5F7FA",
+                      "cornerRadius": 6
+                    },
+                    {
+                      "type": "text",
+                      "id": "OKb4o",
+                      "name": "Lbl_Canvas Bg",
+                      "fill": "#172B42",
+                      "content": "Canvas Bg",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "medium"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Y1Gsu",
+                      "name": "Hex_Canvas Bg",
+                      "fill": "#475569",
+                      "content": "#F5F7FA",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "MZBKj",
+                  "name": "Swatch_Border Slate",
+                  "width": 150,
+                  "cornerRadius": 6,
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "I9HVZN",
+                      "name": "Box_Border Slate",
+                      "width": 150,
+                      "height": 60,
+                      "fill": "#DCE3EB",
+                      "cornerRadius": 6
+                    },
+                    {
+                      "type": "text",
+                      "id": "QFnBK",
+                      "name": "Lbl_Border Slate",
+                      "fill": "#172B42",
+                      "content": "Border Slate",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "medium"
+                    },
+                    {
+                      "type": "text",
+                      "id": "K2ReP",
+                      "name": "Hex_Border Slate",
+                      "fill": "#475569",
+                      "content": "#DCE3EB",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "q2vsYj",
+                  "name": "Swatch_Text Main",
+                  "width": 150,
+                  "cornerRadius": 6,
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "hClAN",
+                      "name": "Box_Text Main",
+                      "width": 150,
+                      "height": 60,
+                      "fill": "#172B42",
+                      "cornerRadius": 6
+                    },
+                    {
+                      "type": "text",
+                      "id": "NDC4S",
+                      "name": "Lbl_Text Main",
+                      "fill": "#172B42",
+                      "content": "Text Main",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "medium"
+                    },
+                    {
+                      "type": "text",
+                      "id": "W5kgd",
+                      "name": "Hex_Text Main",
+                      "fill": "#475569",
+                      "content": "#172B42",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "zMMWN",
+          "name": "DS_ButtonSection",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "cornerRadius": 10,
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 24,
+          "children": [
+            {
+              "type": "text",
+              "id": "jm2eb",
+              "name": "SecTitle_Buttons",
+              "fill": "#172B42",
+              "content": "2. Atomic Button Controls (Fitts's Law Target >= 40px)",
+              "fontFamily": "Inter",
+              "fontSize": 18,
+              "fontWeight": "semibold"
+            },
+            {
+              "type": "frame",
+              "id": "ANXy0",
+              "name": "ButtonsRow",
+              "width": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "L27Uv",
+                  "name": "Button_Primary",
+                  "fill": "#173B63",
+                  "cornerRadius": 8,
+                  "gap": 8,
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Ivs3T",
+                      "name": "BtnPri_Text",
+                      "fill": "#FFFFFF",
+                      "content": "Simpan Perubahan",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "semibold"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Anx5w",
+                  "name": "Button_Secondary",
+                  "fill": "#12665C",
+                  "cornerRadius": 8,
+                  "gap": 8,
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "X9Mdn",
+                      "name": "BtnSec_Text",
+                      "fill": "#FFFFFF",
+                      "content": "Tambah Permohonan",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "semibold"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "TuRdc",
+                  "name": "Button_Outline",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "gap": 8,
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ouHwK",
+                      "name": "BtnOut_Text",
+                      "fill": "#172B42",
+                      "content": "Kembali / Batal",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "medium"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "IlalT",
+                  "name": "Button_Destructive",
+                  "fill": "#991B1B",
+                  "cornerRadius": 8,
+                  "gap": 8,
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "kulTy",
+                      "name": "BtnDest_Text",
+                      "fill": "#FFFFFF",
+                      "content": "Tolak / Nonaktifkan",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "semibold"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "QaFSj",
+                  "name": "Button_Disabled",
+                  "fill": "#E2E8F0",
+                  "cornerRadius": 8,
+                  "gap": 8,
+                  "padding": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Ehb1L",
+                      "name": "BtnDis_Text",
+                      "fill": "#94A3B8",
+                      "content": "Sedang Memproses...",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "medium"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "B6GG2",
+          "name": "DS_BadgesSection",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "cornerRadius": 10,
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 24,
+          "children": [
+            {
+              "type": "text",
+              "id": "N478d",
+              "name": "SecTitle_Badges",
+              "fill": "#172B42",
+              "content": "3. Semantic Badges (Attendance & Workflow Statuses)",
+              "fontFamily": "Inter",
+              "fontSize": 18,
+              "fontWeight": "semibold"
+            },
+            {
+              "type": "frame",
+              "id": "hUS6k",
+              "name": "BadgesRow",
+              "width": "fill_container",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "OwQOD",
+                  "name": "Badge_Hadir",
+                  "fill": "#EAF6EE",
+                  "cornerRadius": 4,
+                  "padding": 6,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "hR1Xb",
+                      "name": "BadgeTxt_Hadir",
+                      "fill": "#166534",
+                      "content": "Hadir",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "semibold"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "CrCNO",
+                  "name": "Badge_Sakit",
+                  "fill": "#E8EFF7",
+                  "cornerRadius": 4,
+                  "padding": 6,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Fzwcx",
+                      "name": "BadgeTxt_Sakit",
+                      "fill": "#173B63",
+                      "content": "Sakit",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "semibold"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "t3Eey",
+                  "name": "Badge_Izin",
+                  "fill": "#FFF4DE",
+                  "cornerRadius": 4,
+                  "padding": 6,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "IvZID",
+                      "name": "BadgeTxt_Izin",
+                      "fill": "#8A570C",
+                      "content": "Izin",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "semibold"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "u0wrEm",
+                  "name": "Badge_Alpa",
+                  "fill": "#FDECEC",
+                  "cornerRadius": 4,
+                  "padding": 6,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "TnAHM",
+                      "name": "BadgeTxt_Alpa",
+                      "fill": "#991B1B",
+                      "content": "Alpa",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "semibold"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "TXhNS",
+                  "name": "Badge_BARU",
+                  "fill": "#E8EFF7",
+                  "cornerRadius": 4,
+                  "padding": 6,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "abCrc",
+                      "name": "BadgeTxt_BARU",
+                      "fill": "#173B63",
+                      "content": "BARU",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "semibold"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "mkyAi",
+                  "name": "Badge_DIPROSES",
+                  "fill": "#FFF4DE",
+                  "cornerRadius": 4,
+                  "padding": 6,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "jEVIw",
+                      "name": "BadgeTxt_DIPROSES",
+                      "fill": "#8A570C",
+                      "content": "DIPROSES",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "semibold"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "N9mxIm",
+                  "name": "Badge_MENUNGGU_PERSETUJUAN",
+                  "fill": "#FFF4DE",
+                  "cornerRadius": 4,
+                  "padding": 6,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "iU0iB",
+                      "name": "BadgeTxt_MENUNGGU_PERSETUJUAN",
+                      "fill": "#8A570C",
+                      "content": "MENUNGGU_PERSETUJUAN",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "semibold"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "UwKDB",
+                  "name": "Badge_DISETUJUI",
+                  "fill": "#EAF6EE",
+                  "cornerRadius": 4,
+                  "padding": 6,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "FsbV5",
+                      "name": "BadgeTxt_DISETUJUI",
+                      "fill": "#166534",
+                      "content": "DISETUJUI",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "semibold"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "cpnJy",
+                  "name": "Badge_SELESAI",
+                  "fill": "#EAF6EE",
+                  "cornerRadius": 4,
+                  "padding": 6,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "i2qyub",
+                      "name": "BadgeTxt_SELESAI",
+                      "fill": "#166534",
+                      "content": "SELESAI",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "semibold"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "rIstB",
+                  "name": "Badge_DITOLAK",
+                  "fill": "#FDECEC",
+                  "cornerRadius": 4,
+                  "padding": 6,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "AZw64",
+                      "name": "BadgeTxt_DITOLAK",
+                      "fill": "#991B1B",
+                      "content": "DITOLAK",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "semibold"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "cvcJH",
+          "name": "DS_FormSection",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "cornerRadius": 10,
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 24,
+          "children": [
+            {
+              "type": "text",
+              "id": "Xxydi",
+              "name": "SecTitle_Forms",
+              "fill": "#172B42",
+              "content": "4. Form Field Controls (Accessible Input, Focus Ring, Error State)",
+              "fontFamily": "Inter",
+              "fontSize": 18,
+              "fontWeight": "semibold"
+            },
+            {
+              "type": "frame",
+              "id": "TLz5B",
+              "name": "FormFieldsRow",
+              "width": "fill_container",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "MV08W",
+                  "name": "Field_Standard",
+                  "width": 320,
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "S5TPyv",
+                      "name": "Lbl_F1",
+                      "fill": "#172B42",
+                      "content": "Nama Lengkap Siswa *",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "medium"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "GvdSg",
+                      "name": "InputBox_F1",
+                      "width": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 6,
+                      "padding": 10,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "kKIfh",
+                          "name": "Placeholder_F1",
+                          "fill": "#94A3B8",
+                          "content": "Contoh: Budi Santoso",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "LEqPg",
+                  "name": "Field_Focused",
+                  "width": 320,
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "hoJqU",
+                      "name": "Lbl_F2",
+                      "fill": "#172B42",
+                      "content": "Nomor Induk Siswa (NIS)",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "medium"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "zhiMs",
+                      "name": "InputBox_F2",
+                      "width": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 6,
+                      "padding": 10,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "awYRy",
+                          "name": "Val_F2",
+                          "fill": "#172B42",
+                          "content": "20261001",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "medium"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "s6QwZz",
+                      "name": "Help_F2",
+                      "fill": "#475569",
+                      "content": "Format 8 digit angka terdaftar",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "MBLZ7",
+                  "name": "Field_Error",
+                  "width": 320,
+                  "layout": "vertical",
+                  "gap": 6,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "j9vtN",
+                      "name": "Lbl_F3",
+                      "fill": "#991B1B",
+                      "content": "Alasan Penolakan Permohonan *",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "medium"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "V1u8w",
+                      "name": "InputBox_F3",
+                      "width": "fill_container",
+                      "fill": "#FDECEC",
+                      "cornerRadius": 6,
+                      "padding": 10,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "X1KEEH",
+                          "name": "Val_F3",
+                          "fill": "#991B1B",
+                          "content": "Berkas persyaratan belum lengkap",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "ky3ZI",
+                      "name": "ErrMsg_F3",
+                      "fill": "#991B1B",
+                      "content": "Alasan penolakan tertulis wajib diisi",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "medium"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "color-primary": {
+      "type": "color",
+      "value": "#173B63"
+    },
+    "color-primary-hover": {
+      "type": "color",
+      "value": "#102D4D"
+    },
+    "color-accent": {
+      "type": "color",
+      "value": "#12665C"
+    },
+    "color-bg": {
+      "type": "color",
+      "value": "#F5F7FA"
+    },
+    "color-surface": {
+      "type": "color",
+      "value": "#FFFFFF"
+    },
+    "color-text-main": {
+      "type": "color",
+      "value": "#172B42"
+    },
+    "color-text-muted": {
+      "type": "color",
+      "value": "#475569"
+    },
+    "color-border": {
+      "type": "color",
+      "value": "#DCE3EB"
+    },
+    "color-success-bg": {
+      "type": "color",
+      "value": "#EAF6EE"
+    },
+    "color-success-fg": {
+      "type": "color",
+      "value": "#166534"
+    },
+    "color-warning-bg": {
+      "type": "color",
+      "value": "#FFF4DE"
+    },
+    "color-warning-fg": {
+      "type": "color",
+      "value": "#8A570C"
+    },
+    "color-danger-bg": {
+      "type": "color",
+      "value": "#FDECEC"
+    },
+    "color-danger-fg": {
+      "type": "color",
+      "value": "#991B1B"
+    },
+    "color-info-bg": {
+      "type": "color",
+      "value": "#E8EFF7"
+    },
+    "color-info-fg": {
+      "type": "color",
+      "value": "#173B63"
+    }
+  },
+  "fileToken": "8f882ea5-cc6e-41ee-8467-a4f01c0beb25"
+}
