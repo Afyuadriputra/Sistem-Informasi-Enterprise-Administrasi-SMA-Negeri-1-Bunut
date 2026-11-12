@@ -67,5 +67,9 @@ Mengacu pada `UID.md` dan panduan skill antislop (`antislop-ui`, `ui-taste`, `an
 ## 4. Batasan Wewenang & Protokol Koordinasi
 
 1. **Isolasi Berkas:** Design Agent hanya berhak menulis pada direktori `design/**` dan berkas koordinasi `coordination/DESIGN_STATUS.md`.
-2. **Handoff ke Frontend:** Setelah milestone desain selesai (misal `UX-M1` atau `UX-M4`), Design Agent menerbitkan ringkasan handoff pada `design/tokens.json` atau dokumen spesifikasi handoff markdown, serta memperbarui status di `coordination/DESIGN_STATUS.md`.
-3. **Sinkronisasi dengan Kontrak:** Jika dalam perancangan antarmuka ditemukan kebutuhan data yang belum tersedia pada kontrak API, Design Agent mengajukan usulan pada `coordination/CONTRACT_CHANGE_REQUESTS.md` melalui Coordinator.
+2. **Dokumentasi Handoff Tunggal:** Seluruh hasil desain dikonsolidasikan secara resmi ke dalam dua dokumen utama:
+   - `design/DESIGN_HANDOFF.md`: Dokumen spesifikasi teknis serah terima desain untuk Frontend Agent.
+   - `design/DESIGN_AUDIT_REPORT.md`: Dokumen laporan audit mutu, aksesibilitas WCAG 2.2 AA, kepatuhan kontrak, dan katalog bukti visual.
+3. **Master Canvas & Token:** Kanvas aktif utama berlokasi di `design/master-canvas.pen` (864 KB, 32 visual frames) dan token visual di `design/tokens.json` (7.1 KB). Berkas domain checkpoint diarsipkan di `design/backup/`, dan 32 bukti visual PNG di `design/evidence/`.
+4. **Handoff ke Frontend:** Frontend Agent mengonsumsi `design/DESIGN_HANDOFF.md` dan `design/tokens.json` sebagai acuan tunggal konstruksi antarmuka aplikasi.
+5. **Sinkronisasi dengan Kontrak:** Jika dalam perancangan antarmuka ditemukan kebutuhan data yang belum tersedia pada kontrak API, Design Agent mengajukan usulan pada `coordination/CONTRACT_CHANGE_REQUESTS.md` melalui Coordinator.
