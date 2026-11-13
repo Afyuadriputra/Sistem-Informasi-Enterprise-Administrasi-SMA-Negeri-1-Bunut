@@ -53,7 +53,8 @@ def refresh(request: HttpRequest, payload: RefreshRequest):
 )
 def logout(request: HttpRequest, payload: LogoutRequest):
     req_id = getattr(request, "request_id", None)
-    revoke_token(payload.refresh_token, request.user, req_id)
+    access_jti = getattr(request, "token_jti", None)
+    revoke_token(payload.refresh_token, request.user, req_id, access_jti=access_jti)
     return SuccessMessageResponse(message="Sesi berhasil diakhiri.")
 
 
@@ -99,6 +100,7 @@ def create_user_endpoint(request: HttpRequest, payload: UserCreateRequest):
     require_roles(request.user, ["Administrator"])
     user = create_new_user(payload, actor=request.user)
     from ninja.responses import Response
+
     return Response(get_user_detail(user.id).model_dump(), status=201)
 
 
