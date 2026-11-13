@@ -57,14 +57,14 @@ class TestAdministrationModule:
     def test_create_and_list_service_types(self, client, admin_setup):
         headers = {"HTTP_AUTHORIZATION": f"Bearer {admin_setup['tu_token']}"}
 
-        # List types
+        # List types (TU is allowed)
         res = client.get("/api/administration/service-types", **headers)
         assert res.status_code == 200
         data = res.json()
         assert "items" in data
         assert len(data["items"]) >= 1
 
-        # Create type
+        # Create type: TU attempt -> 403 Forbidden (RBAC: Administrator-only)
         payload = {
             "code": "SK-PINDAH",
             "name": "Surat Pindah Sekolah",
@@ -72,11 +72,21 @@ class TestAdministrationModule:
             "requires_approval": True,
             "is_active": True,
         }
-        res_create = client.post(
+        res_tu_create = client.post(
             "/api/administration/service-types",
             data=payload,
             content_type="application/json",
             **headers,
+        )
+        assert res_tu_create.status_code == 403
+
+        # Create type: Administrator attempt -> 201 Created
+        admin_headers = {"HTTP_AUTHORIZATION": f"Bearer {admin_setup['admin_token']}"}
+        res_create = client.post(
+            "/api/administration/service-types",
+            data=payload,
+            content_type="application/json",
+            **admin_headers,
         )
         assert res_create.status_code == 201
         assert res_create.json()["code"] == "SK-PINDAH"
