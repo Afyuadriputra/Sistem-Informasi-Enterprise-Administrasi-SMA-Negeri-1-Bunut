@@ -40,9 +40,7 @@ def guru_user(db, sample_roles):
 
 @pytest.fixture
 def inactive_user(db, sample_roles):
-    user = User.objects.create_user(
-        username="inactive_test", password="Password123!", is_active=False
-    )
+    user = User.objects.create_user(username="inactive_test", password="Password123!", is_active=False)
     UserRole.objects.create(user=user, role=sample_roles["guru"])
     return user
 
