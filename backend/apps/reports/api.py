@@ -23,7 +23,11 @@ def get_dashboard_metrics(
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
 ):
-    return selectors.get_dashboard_metrics(actor=request.user)
+    return selectors.get_dashboard_metrics(
+        actor=request.user,
+        start_date=start_date,
+        end_date=end_date,
+    )
 
 
 @reports_router.get(
