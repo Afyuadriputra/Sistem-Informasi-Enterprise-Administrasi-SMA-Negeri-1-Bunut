@@ -2,6 +2,7 @@ import logging
 import uuid
 
 from django.conf import settings
+from django.db import OperationalError
 from django.http import HttpRequest, JsonResponse
 from ninja import NinjaAPI
 from ninja.errors import HttpError
@@ -119,6 +120,22 @@ def http_error_handler(request: HttpRequest, exc: HttpError):
     return response
 
 
+@api.exception_handler(OperationalError)
+def operational_error_handler(request: HttpRequest, exc: OperationalError):
+    if "locked" in str(exc).lower():
+        req_id = get_request_id(request)
+        payload = {
+            "code": "CONCURRENCY_CONFLICT",
+            "message": "Terjadi konflik konkurensi saat mengakses basis data. Silakan coba kembali.",
+            "details": None,
+            "request_id": req_id,
+        }
+        response = JsonResponse(payload, status=409)
+        response["X-Request-ID"] = req_id
+        return response
+    return generic_exception_handler(request, exc)
+
+
 @api.exception_handler(Exception)
 def generic_exception_handler(request: HttpRequest, exc: Exception):
     req_id = get_request_id(request)
@@ -160,4 +177,3 @@ api.add_router("/student-affairs", student_affairs_router)
 api.add_router("/administration", administration_router)
 api.add_router("/reports", reports_router)
 api.add_router("/audit-logs", audit_router)
-
