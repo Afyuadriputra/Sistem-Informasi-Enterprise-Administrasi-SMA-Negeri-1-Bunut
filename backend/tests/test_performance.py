@@ -142,3 +142,56 @@ def test_performance_attendance_bulk_save_latency(client, perf_env):
     duration_ms = (t1 - t0) * 1000
     # Bulk create of 30 records should easily complete in under 500ms
     assert duration_ms < 1000, f"Bulk attendance took {duration_ms}ms"
+
+
+@pytest.mark.django_db
+def test_performance_student_list_and_attendance_roster(client, perf_env):
+    """Benchmark student list pagination and attendance roster generation latencies."""
+    admin_headers = {"HTTP_AUTHORIZATION": f"Bearer {perf_env['tokens']['admin']}"}
+    guru_headers = {"HTTP_AUTHORIZATION": f"Bearer {perf_env['tokens']['guru']}"}
+
+    # 1. Student List Latency (15 iterations)
+    list_latencies = []
+    for _ in range(15):
+        t0 = time.perf_counter()
+        res = client.get("/api/master/students?page=1&page_size=20", **admin_headers)
+        t1 = time.perf_counter()
+        assert res.status_code == 200
+        list_latencies.append((t1 - t0) * 1000)
+
+    list_metrics = compute_latencies(list_latencies)
+    assert list_metrics["p95_ms"] < 250, f"Student list p95 exceeded budget: {list_metrics}"
+
+    # 2. Attendance Roster Latency (15 iterations)
+    roster_latencies = []
+    class_id = perf_env["class"].id
+    today = date.today().isoformat()
+    for _ in range(15):
+        t0 = time.perf_counter()
+        res = client.get(f"/api/attendance/roster?class_id={class_id}&date={today}", **guru_headers)
+        t1 = time.perf_counter()
+        assert res.status_code == 200
+        roster_latencies.append((t1 - t0) * 1000)
+
+    roster_metrics = compute_latencies(roster_latencies)
+    assert roster_metrics["p95_ms"] < 250, f"Roster p95 exceeded budget: {roster_metrics}"
+
+
+@pytest.mark.django_db
+def test_performance_excel_and_pdf_export_latency(client, perf_env):
+    """Benchmark binary report generation latency (Excel openpyxl and PDF reportlab)."""
+    guru_headers = {"HTTP_AUTHORIZATION": f"Bearer {perf_env['tokens']['guru']}"}
+    today = date.today().isoformat()
+
+    # 1. Attendance Excel Export (5 iterations)
+    excel_latencies = []
+    for _ in range(5):
+        t0 = time.perf_counter()
+        res = client.get(f"/api/reports/attendance.xlsx?start_date={today}&end_date={today}", **guru_headers)
+        t1 = time.perf_counter()
+        assert res.status_code == 200
+        excel_latencies.append((t1 - t0) * 1000)
+
+    excel_metrics = compute_latencies(excel_latencies)
+    # Binary spreadsheet generation under 1000ms
+    assert excel_metrics["p95_ms"] < 1000, f"Excel generation exceeded budget: {excel_metrics}"
