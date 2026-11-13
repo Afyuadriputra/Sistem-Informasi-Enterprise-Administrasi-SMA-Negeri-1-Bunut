@@ -33,8 +33,15 @@ class JWTAuth(HttpBearer):
             raise AuthenticationFailedError("Jenis token tidak valid.")
 
         jti = payload.get("jti")
-        if jti and cache.get(f"blacklist:{jti}"):
-            raise AuthenticationFailedError("Sesi token telah dicabut (logout).")
+        if jti:
+            try:
+                is_blacklisted = bool(cache.get(f"blacklist:{jti}"))
+            except Exception:
+                # Fail-closed policy for security-critical session blacklist check
+                raise AuthenticationFailedError("Layanan verifikasi sesi tidak tersedia (fail-closed).")
+
+            if is_blacklisted:
+                raise AuthenticationFailedError("Sesi token telah dicabut (logout).")
 
         user_id = payload.get("user_id")
         if not user_id:
@@ -49,6 +56,7 @@ class JWTAuth(HttpBearer):
             raise AuthenticationFailedError("Akun pengguna telah dinonaktifkan.")
 
         request.user = user
+        request.token_jti = jti
         return user
 
 
@@ -56,14 +64,13 @@ jwt_auth = JWTAuth()
 
 
 def check_roles(user: User, allowed_roles: List[str]) -> bool:
-    """Evaluates multi-role union. Administrator has universal access."""
+    """Evaluates multi-role additive union without unauthorized Administrator universal bypass.
+    Deny-by-default: user must possess at least one of the explicitly allowed roles.
+    """
     if not user or not user.is_active:
         return False
 
     user_roles = {r.name for r in user.roles.all()}
-    if "Administrator" in user_roles:
-        return True
-
     return bool(user_roles.intersection(allowed_roles))
 
 
@@ -83,7 +90,14 @@ class LoginRateLimiter:
     @classmethod
     def check_rate_limit(cls, ip: str, username: str):
         key = cls._key(ip, username)
-        attempts = cache.get(key, 0)
+        try:
+            attempts = cache.get(key, 0)
+        except Exception:
+            # Fail-closed on security-critical brute-force rate limiter failure
+            raise RateLimitExceededError(
+                message="Layanan verifikasi keamanan sementara tidak tersedia. Silakan coba sesaat lagi.",
+                retry_after=60,
+            )
         if attempts >= cls.MAX_ATTEMPTS:
             raise RateLimitExceededError(
                 message="Terlalu banyak percobaan masuk yang gagal. Silakan coba 15 menit lagi.",
@@ -93,13 +107,19 @@ class LoginRateLimiter:
     @classmethod
     def record_failure(cls, ip: str, username: str):
         key = cls._key(ip, username)
-        attempts = cache.get(key, 0)
-        cache.set(key, attempts + 1, timeout=cls.WINDOW_SECONDS)
+        try:
+            attempts = cache.get(key, 0) or 0
+            cache.set(key, attempts + 1, timeout=cls.WINDOW_SECONDS)
+        except Exception:
+            pass
 
     @classmethod
     def reset(cls, ip: str, username: str):
         key = cls._key(ip, username)
-        cache.delete(key)
+        try:
+            cache.delete(key)
+        except Exception:
+            pass
 
 
 def get_client_ip(request: HttpRequest) -> str:
