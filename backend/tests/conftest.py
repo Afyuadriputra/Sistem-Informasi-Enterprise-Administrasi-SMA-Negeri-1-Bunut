@@ -16,3 +16,10 @@ def auth_headers():
         return h
 
     return _headers
+
+
+@pytest.fixture(autouse=True)
+def test_private_media_root(tmp_path, settings):
+    media_dir = tmp_path / "private_media"
+    media_dir.mkdir(parents=True, exist_ok=True)
+    settings.PRIVATE_MEDIA_ROOT = str(media_dir)
