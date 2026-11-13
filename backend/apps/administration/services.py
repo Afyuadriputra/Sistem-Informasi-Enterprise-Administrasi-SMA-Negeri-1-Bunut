@@ -30,10 +30,12 @@ from apps.core.exceptions import (
 )
 from apps.core.security import require_roles
 from apps.master_data.models import Student
+from apps.reports.services import invalidate_dashboard_cache
 
 
 @transaction.atomic
 def create_service_type(data: ServiceTypeCreateRequest, actor: User) -> ServiceType:
+    require_roles(actor, ["Administrator"])
     if ServiceType.objects.filter(code=data.code).exists():
         raise BusinessValidationError(f"Kode jenis layanan '{data.code}' sudah terdaftar.")
 
@@ -55,6 +57,7 @@ def create_service_type(data: ServiceTypeCreateRequest, actor: User) -> ServiceT
 
 @transaction.atomic
 def update_service_type(type_id: int, data: ServiceTypeUpdateRequest, actor: User) -> ServiceType:
+    require_roles(actor, ["Administrator"])
     st = ServiceType.objects.filter(id=type_id).first()
     if not st:
         raise NotFoundError("Jenis layanan tidak ditemukan.")
@@ -82,6 +85,7 @@ def update_service_type(type_id: int, data: ServiceTypeUpdateRequest, actor: Use
 def create_service_request(
     data: ServiceRequestCreateRequest, actor: User, request_id: Optional[str] = None
 ) -> ServiceRequest:
+    require_roles(actor, ["Tata Usaha"])
     service_type = ServiceType.objects.filter(id=data.service_type_id, is_active=True).first()
     if not service_type:
         raise NotFoundError("Jenis layanan tidak ditemukan atau tidak aktif.")
@@ -123,6 +127,7 @@ def create_service_request(
         request_id=request_id,
         metadata=f'{{"request_number": "{req.request_number}"}}',
     )
+    transaction.on_commit(invalidate_dashboard_cache)
     return req
 
 
@@ -139,7 +144,7 @@ def transition_service_request(
             f"Permohonan telah berada pada status akhir '{req.status}' dan tidak dapat diubah lagi."
         )
 
-    # Optimistic locking
+    # Optimistic concurrency locking
     if req.version != data.expected_version:
         raise ConcurrencyConflictError(
             message="Data permohonan telah diubah oleh pengguna lain. Silakan muat ulang halaman.",
@@ -149,31 +154,32 @@ def transition_service_request(
     initial_status = req.status
 
     if data.action == ServiceActionEnum.PROSES:
-        require_roles(actor, ["Administrator", "Tata Usaha"])
+        require_roles(actor, ["Tata Usaha"])
         if req.status != ServiceRequestStatusEnum.DIAJUKAN:
             raise BusinessValidationError("Aksi PROSES hanya dapat dilakukan pada permohonan berstatus DIAJUKAN.")
         final_status = ServiceRequestStatusEnum.DIPROSES
 
     elif data.action == ServiceActionEnum.AJUKAN_PERSETUJUAN:
-        require_roles(actor, ["Administrator", "Tata Usaha"])
+        require_roles(actor, ["Tata Usaha"])
         if req.status != ServiceRequestStatusEnum.DIPROSES:
             raise BusinessValidationError("Permohonan harus berstatus DIPROSES sebelum diajukan persetujuan.")
         final_status = ServiceRequestStatusEnum.MENUNGGU_PERSETUJUAN
 
     elif data.action == ServiceActionEnum.SETUJUI:
-        require_roles(actor, ["Administrator", "Pimpinan"])
+        # Pimpinan only - Separation of duties, Administrator is forbidden
+        require_roles(actor, ["Pimpinan"])
         if req.status != ServiceRequestStatusEnum.MENUNGGU_PERSETUJUAN:
             raise BusinessValidationError("Hanya permohonan MENUNGGU_PERSETUJUAN yang dapat disetujui.")
         final_status = ServiceRequestStatusEnum.DISETUJUI
 
     elif data.action == ServiceActionEnum.TOLAK:
-        require_roles(actor, ["Administrator", "Pimpinan", "Tata Usaha"])
+        require_roles(actor, ["Pimpinan", "Tata Usaha"])
         if not data.note or not data.note.strip():
             raise BusinessValidationError("Alasan penolakan permohonan wajib diisi.")
         final_status = ServiceRequestStatusEnum.DITOLAK
 
     elif data.action == ServiceActionEnum.SELESAIKAN:
-        require_roles(actor, ["Administrator", "Tata Usaha"])
+        require_roles(actor, ["Tata Usaha"])
         if req.service_type.requires_approval:
             if req.status != ServiceRequestStatusEnum.DISETUJUI:
                 raise BusinessValidationError("Permohonan memerlukan persetujuan sebelum dapat diselesaikan.")
@@ -206,6 +212,7 @@ def transition_service_request(
         request_id=request_id_header,
         metadata=f'{{"action": "{data.action}", "version": {req.version}}}',
     )
+    transaction.on_commit(invalidate_dashboard_cache)
 
     return ServiceTransitionResponse(
         id=req.id,
@@ -221,16 +228,18 @@ def upload_service_document(request_id: int, uploaded_file: UploadedFile, actor:
     if not req:
         raise NotFoundError("Permohonan surat tidak ditemukan.")
 
-    require_roles(actor, ["Administrator", "Tata Usaha"])
+    require_roles(actor, ["Tata Usaha"])
 
-    # 1. Size check: max 5 MB (5,242,880 bytes)
+    # 1. Size checks: max 5 MB and not empty
     max_size = 5 * 1024 * 1024
+    if uploaded_file.size == 0:
+        raise BusinessValidationError("Berkas tidak boleh kosong (0 bytes).")
     if uploaded_file.size > max_size:
         raise BusinessValidationError("Ukuran berkas melebihi batas maksimum 5 MB.")
 
-    # 2. Extension check
-    filename = uploaded_file.name
-    ext = Path(filename).suffix.lower()
+    # 2. Extension check and sanitization (anti-path traversal)
+    clean_filename = Path(uploaded_file.name).name
+    ext = Path(clean_filename).suffix.lower()
     allowed_exts = {".pdf", ".jpg", ".jpeg", ".png"}
     if ext not in allowed_exts:
         raise BusinessValidationError("Ekstensi berkas tidak diizinkan. Hanya berkas PDF, JPG, dan PNG yang didukung.")
@@ -239,40 +248,52 @@ def upload_service_document(request_id: int, uploaded_file: UploadedFile, actor:
     header_bytes = uploaded_file.read(16)
     uploaded_file.seek(0)
 
-    mime_type = "application/octet-stream"
     if header_bytes.startswith(b"%PDF-"):
         mime_type = "application/pdf"
+        if ext != ".pdf":
+            raise BusinessValidationError("Ekstensi berkas tidak sesuai dengan tipe konten berkas (PDF).")
     elif header_bytes.startswith(b"\xff\xd8\xff"):
         mime_type = "image/jpeg"
+        if ext not in (".jpg", ".jpeg"):
+            raise BusinessValidationError("Ekstensi berkas tidak sesuai dengan tipe konten berkas (JPEG).")
     elif header_bytes.startswith(b"\x89PNG\r\n\x1a\n"):
         mime_type = "image/png"
+        if ext != ".png":
+            raise BusinessValidationError("Ekstensi berkas tidak sesuai dengan tipe konten berkas (PNG).")
     else:
         raise BusinessValidationError("Format dan struktur isi berkas tidak valid atau tidak sesuai ekstensi.")
 
-    # 4. Save to private storage with random UUID
+    # 4. Save to private storage with random UUID key and failure cleanup
     storage_key = str(uuid.uuid4())
     private_dir = Path(settings.PRIVATE_MEDIA_ROOT)
     private_dir.mkdir(parents=True, exist_ok=True)
     target_path = private_dir / storage_key
 
-    with open(target_path, "wb") as f:
-        for chunk in uploaded_file.chunks():
-            f.write(chunk)
+    try:
+        with open(target_path, "wb") as f:
+            for chunk in uploaded_file.chunks():
+                f.write(chunk)
 
-    doc = Document.objects.create(
-        request=req,
-        storage_key=storage_key,
-        original_filename=filename,
-        mime_type=mime_type,
-        file_size=uploaded_file.size,
-        uploaded_by=actor,
-    )
+        doc = Document.objects.create(
+            request=req,
+            storage_key=storage_key,
+            original_filename=clean_filename,
+            mime_type=mime_type,
+            file_size=uploaded_file.size,
+            uploaded_by=actor,
+        )
 
-    ActivityLog.objects.create(
-        actor=actor,
-        action="UPLOAD_PRIVATE_DOCUMENT",
-        resource_type="administration",
-        resource_id=str(doc.id),
-        metadata=f'{{"filename": "{filename}", "size": {doc.file_size}}}',
-    )
+        ActivityLog.objects.create(
+            actor=actor,
+            action="UPLOAD_PRIVATE_DOCUMENT",
+            resource_type="administration",
+            resource_id=str(doc.id),
+            metadata=f'{{"filename": "{clean_filename}", "size": {doc.file_size}}}',
+        )
+    except Exception:
+        # Cleanup orphaned physical file on database failure
+        if target_path.exists():
+            target_path.unlink()
+        raise
+
     return doc
