@@ -41,9 +41,7 @@ def attendance_setup(db):
     cls2 = SchoolClass.objects.create(academic_year=ay, name="X-B", level=10)
 
     # Assign Guru 1 to Class 1 only
-    ClassAssignment.objects.create(
-        employee=emp1, school_class=cls1, role="GURU_MAPEL", start_date="2026-07-01"
-    )
+    ClassAssignment.objects.create(employee=emp1, school_class=cls1, role="GURU_MAPEL", start_date="2026-07-01")
 
     # Students enrolled in Class 1
     std1 = Student.objects.create(student_number="S001", name="Siswa Satu", gender="LAKI_LAKI")
