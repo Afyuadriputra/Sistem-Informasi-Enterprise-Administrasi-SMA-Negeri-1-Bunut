@@ -91,6 +91,7 @@ logs/
 # AGENT / LLM / CODE INDEXING TOOLS
 # ==========================================
 .codegraph/
+.trail/cache/
 .cursor/
 .claude/
 .windsurf/
