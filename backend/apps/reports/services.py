@@ -26,22 +26,28 @@ def invalidate_dashboard_cache():
         pass
 
 
+def sanitize_cell_value(val):
+    """Sanitize cell value to prevent formula injection (CWE-1236)."""
+    if isinstance(val, str) and val.startswith(("=", "+", "-", "@")):
+        return f"'{val}"
+    return val
+
+
 def generate_attendance_excel(
     start_date: date,
     end_date: date,
     actor: User,
     class_id: Optional[int] = None,
 ) -> io.BytesIO:
-    # 1. Role validation
+    # 1. Role validation (Guru, Wali Kelas, Kesiswaan, Pimpinan)
     user_roles = {r.name for r in actor.roles.all()}
-    if "Tata Usaha" in user_roles and not user_roles.intersection({"Administrator", "Pimpinan", "Kesiswaan", "Guru"}):
-        raise PermissionDeniedError("Peran Tata Usaha tidak memiliki wewenang ekspor kehadiran.")
+    allowed_roles = {"Guru", "Guru Mapel", "Wali Kelas", "Kesiswaan", "Pimpinan"}
+    if not user_roles.intersection(allowed_roles):
+        raise PermissionDeniedError("Peran Anda tidak memiliki wewenang ekspor kehadiran.")
 
-    is_privileged = bool(user_roles.intersection({"Administrator", "Pimpinan", "Kesiswaan"}))
+    is_privileged = bool(user_roles.intersection({"Pimpinan", "Kesiswaan"}))
 
-    qs = Attendance.objects.select_related("student", "school_class").filter(
-        date__gte=start_date, date__lte=end_date
-    )
+    qs = Attendance.objects.select_related("student", "school_class").filter(date__gte=start_date, date__lte=end_date)
 
     if not is_privileged:
         # Teacher must be assigned to the class
@@ -65,8 +71,8 @@ def generate_attendance_excel(
     ws = wb.active
     ws.title = "Rekap Kehadiran"
 
-    # Header styling (institutional navy)
-    header_fill = PatternFill(start_color="1E3A8A", end_color="1E3A8A", fill_type="solid")
+    # Header styling (institutional navy #173B63)
+    header_fill = PatternFill(start_color="173B63", end_color="173B63", fill_type="solid")
     header_font = Font(name="Arial", size=11, bold=True, color="FFFFFF")
     thin_border = Border(
         left=Side(style="thin", color="CCCCCC"),
@@ -79,7 +85,7 @@ def generate_attendance_excel(
     ws.merge_cells("A1:G1")
     title_cell = ws["A1"]
     title_cell.value = "REKAPITULASI KEHADIRAN SISWA - SMA NEGERI 1 BUNUT"
-    title_cell.font = Font(name="Arial", size=14, bold=True, color="1E3A8A")
+    title_cell.font = Font(name="Arial", size=14, bold=True, color="173B63")
     title_cell.alignment = Alignment(horizontal="center", vertical="center")
 
     ws.merge_cells("A2:G2")
@@ -101,10 +107,10 @@ def generate_attendance_excel(
         cell.alignment = Alignment(horizontal="center", vertical="center")
         cell.border = thin_border
 
-    # Data rows
+    # Data rows with formula injection sanitization
     row_num = 1
     for att in qs:
-        ws.append([
+        raw_row = [
             row_num,
             att.date.strftime("%d/%m/%Y"),
             att.school_class.name,
@@ -112,7 +118,8 @@ def generate_attendance_excel(
             att.student.full_name,
             att.status,
             att.note or "-",
-        ])
+        ]
+        ws.append([sanitize_cell_value(val) for val in raw_row])
         current_row = ws.max_row
         for col_idx in range(1, len(headers) + 1):
             cell = ws.cell(row=current_row, column=col_idx)
@@ -149,7 +156,7 @@ def generate_administration_pdf(
     actor: User,
     service_type_id: Optional[int] = None,
 ) -> io.BytesIO:
-    require_roles(actor, ["Administrator", "Tata Usaha", "Pimpinan"])
+    require_roles(actor, ["Tata Usaha", "Pimpinan"])
 
     qs = ServiceRequest.objects.select_related("service_type", "student").filter(
         created_at__date__gte=start_date, created_at__date__lte=end_date
@@ -179,7 +186,7 @@ def generate_administration_pdf(
         parent=styles["Heading1"],
         fontName="Helvetica-Bold",
         fontSize=16,
-        textColor=colors.HexColor("#1E3A8A"),
+        textColor=colors.HexColor("#173B63"),
         alignment=1,  # Center
         spaceAfter=6,
     )
@@ -210,15 +217,17 @@ def generate_administration_pdf(
     idx = 1
     for r in qs:
         student_display = r.student.full_name if r.student else "-"
-        table_data.append([
-            str(idx),
-            r.request_number,
-            r.service_type.name,
-            r.applicant_name,
-            student_display,
-            r.status,
-            r.created_at.strftime("%d/%m/%Y"),
-        ])
+        table_data.append(
+            [
+                str(idx),
+                r.request_number,
+                r.service_type.name,
+                r.applicant_name,
+                student_display,
+                r.status,
+                r.created_at.strftime("%d/%m/%Y"),
+            ]
+        )
         idx += 1
 
     if len(table_data) == 1:
@@ -226,20 +235,22 @@ def generate_administration_pdf(
 
     t = Table(table_data, colWidths=[30, 130, 140, 120, 120, 90, 80])
     t.setStyle(
-        TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1E3A8A")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, 0), 9),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("ALIGN", (2, 1), (4, -1), "LEFT"),
-            ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
-            ("FONTSIZE", (0, 1), (-1, -1), 8),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-            ("TOPPADDING", (0, 0), (-1, -1), 5),
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#D1D5DB")),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F9FAFB")]),
-        ])
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#173B63")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, 0), 9),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("ALIGN", (2, 1), (4, -1), "LEFT"),
+                ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+                ("FONTSIZE", (0, 1), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                ("TOPPADDING", (0, 0), (-1, -1), 5),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#D1D5DB")),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F9FAFB")]),
+            ]
+        )
     )
     elements.append(t)
 
