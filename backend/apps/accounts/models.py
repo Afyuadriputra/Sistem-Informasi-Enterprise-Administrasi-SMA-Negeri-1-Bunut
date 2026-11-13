@@ -64,9 +64,7 @@ class UserRole(models.Model):
 
 
 class ActivityLog(models.Model):
-    actor = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, blank=True, db_column="actor_id"
-    )
+    actor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, db_column="actor_id")
     action = models.CharField(max_length=100)
     resource_type = models.CharField(max_length=50)
     resource_id = models.CharField(max_length=50, null=True, blank=True)
