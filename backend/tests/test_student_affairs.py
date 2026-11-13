@@ -41,12 +41,8 @@ def case_setup(db):
     cls_b = SchoolClass.objects.create(academic_year=ay, name="X-B", level=10)
 
     # Assignments
-    ClassAssignment.objects.create(
-        employee=emp_wali, school_class=cls_a, role="WALI_KELAS", start_date="2026-07-01"
-    )
-    ClassAssignment.objects.create(
-        employee=emp_wali_b, school_class=cls_b, role="WALI_KELAS", start_date="2026-07-01"
-    )
+    ClassAssignment.objects.create(employee=emp_wali, school_class=cls_a, role="WALI_KELAS", start_date="2026-07-01")
+    ClassAssignment.objects.create(employee=emp_wali_b, school_class=cls_b, role="WALI_KELAS", start_date="2026-07-01")
 
     # Students
     std_a = Student.objects.create(student_number="S101", name="Siswa A", gender="LAKI_LAKI")
