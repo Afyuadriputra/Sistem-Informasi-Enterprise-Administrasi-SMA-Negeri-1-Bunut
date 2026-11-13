@@ -1,6 +1,6 @@
 # Backend Changelog - Sistem Informasi Enterprise Administrasi SMA Negeri 1 Bunut
 
-Seluruh catatan pembaruan teknis pada pengembangan backend dari milestone BE-M1 hingga BE-M8 dicatat secara kronologis dalam dokumen ini.
+Seluruh catatan pembaruan teknis pada pengembangan backend dari milestone BE-M1 hingga BE-M9 dicatat secara kronologis dalam dokumen ini.
 
 ---
 
@@ -127,3 +127,31 @@ Seluruh catatan pembaruan teknis pada pengembangan backend dari milestone BE-M1 
 - Sanitasi data rahasia pada seluruh modul logging.
 - Dokumentasi master final: `backend/BACKEND_IMPLEMENTATION_REPORT.md` dan `backend/BACKEND_CHANGELOG.md`.
 - Pembaruan status koordinasi pada `coordination/BACKEND_STATUS.md`.
+
+---
+
+## [BE-M9] - Independent Backend Verification, Security Hardening & Performance Validation
+**Tanggal:** 13 November 2026
+
+### Ditambahkan:
+- Rangkaian pengujian otomatis baru (41 pengujian baru, total 78 pengujian lulus 100%):
+  - `backend/tests/test_contract.py` (4 tes): Hash SHA-256 kontrak, integritas DBML, verifikasi 49/49 operasi OpenAPI, 19/19 operasi master data termasuk DEC-TECH-16 PATCH endpoints.
+  - `backend/tests/test_jwt_security.py` (9 tes): Validasi access token, expired token 401, signature & format malformed 401, pencegahan pencampuran jenis token, rotasi refresh token dengan deteksi reuse token family, pencabutan sesi logout (access JTI & refresh JTI), blokir akun nonaktif, pencegahan lockout admin terakhir & self-deactivation, login brute-force rate limiter (429).
+  - `backend/tests/test_rbac_matrix.py` (4 tes): Log audit strictly Administrator, persetujuan surat strictly Pimpinan, simpan absensi massal strictly Guru pengampu aktif, ekspor laporan strictly peran berwenang.
+  - `backend/tests/test_privacy_dec_tech_18.py` (5 tes): Server-side masking catatan konseling untuk Wali Kelas, catatan terbuka untuk Kesiswaan, penolakan Wali Kelas luar perwalian (403), penolakan Administrator murni tanpa peran fungsional (403), validasi catatan wajib pada aksi CATAT_TINDAKAN (422).
+  - `backend/tests/test_state_machines.py` (4 tes): Siklus hidup kasus siswa lengkap & terminal state, optimistic locking 409 pada kasus siswa, siklus hidup permohonan surat tata usaha lengkap, rejection terminal state.
+  - `backend/tests/test_private_files.py` (5 tes): Penolakan berkas 0-byte (422), sanitasi path traversal pada nama file, penolakan spoofing tipe berkas via inspeksi magic bytes biner (422), penolakan berkas >5 MB (422), kontrol otorisasi unduh berkas privat.
+  - `backend/tests/test_concurrency.py` (2 tes): Simulasi multi-threaded ThreadPoolExecutor pengujian race condition optimistic concurrency control pada mutasi kasus siswa dan permohonan persuratan (HTTP 409).
+  - `backend/tests/test_query_optimization.py` (5 tes): Eliminasi kueri N+1 pada daftar kasus kesiswaan, kueri terikat konstan pada daftar siswa, rekap absensi, dan daftar permohonan persuratan, serta verifikasi 0 kueri basis data domain pada dashboard warm cache.
+  - `backend/tests/test_performance.py` (3 tes): Pengukuran latensi login p95 < 2000 ms, cache dashboard p95 < 200 ms, dan simpan absensi massal 30 siswa < 1000 ms.
+- Penguatan Keamanan & Arsitektur:
+  - Penghapusan universal Administrator bypass di `apps/core/security.py`, `apps/attendance/services.py`, `apps/student_affairs/selectors.py`, `apps/reports/services.py`.
+  - Pelacakan `family_id` pada rotasi JWT refresh token dan invalidasi famili otomatis saat deteksi token reuse replay attack.
+  - Penambahan tracking `request.token_jti` dan pencabutan access token JTI serta refresh token pada logout.
+  - Penambahan `Prefetch("student__enrollments", ...)` pada `apps/student_affairs/selectors.py` untuk mengeliminasi kueri N+1.
+  - Sanitasi formula injection spreadsheet (CWE-1236) pada `apps/reports/services.py` dan penyelarasan tema warna Institusional Navy `#173B63`.
+  - Penanganan pengecualian global untuk SQLite `OperationalError: database table is locked` yang dipetakan ke HTTP 409 `CONCURRENCY_CONFLICT`.
+  - Hooking `transaction.on_commit(invalidate_dashboard_cache)` pada mutasi akun, siswa, enrollment, absensi, dan permohonan surat.
+- Dokumentasi:
+  - Pembaruan laporan master `backend/BACKEND_IMPLEMENTATION_REPORT.md` dengan Bab 21 dan evaluasi 18 Acceptance Gates (G1 - G18).
+  - Pembaruan status pelacakan pada `coordination/BACKEND_STATUS.md`.
