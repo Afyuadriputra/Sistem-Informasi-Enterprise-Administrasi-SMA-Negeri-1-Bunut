@@ -10,8 +10,9 @@ from apps.accounts.models import ActivityLog, User
 from apps.attendance.models import Attendance, AttendanceStatusEnum
 from apps.attendance.schemas import AttendanceBulkRequest, AttendanceBulkResponse
 from apps.core.exceptions import BusinessValidationError, NotFoundError, PermissionDeniedError
-from apps.core.security import check_roles
+from apps.core.security import require_roles
 from apps.master_data.models import ClassAssignment, Enrollment, SchoolClass
+from apps.reports.services import invalidate_dashboard_cache
 
 
 @transaction.atomic
@@ -27,22 +28,23 @@ def save_bulk_attendance(
     if not school_class:
         raise NotFoundError("Kelas tidak ditemukan.")
 
-    # 3. Authorization validation
-    if not check_roles(actor, ["Administrator"]):
-        # Must have active class assignment as teacher or homeroom
-        if not hasattr(actor, "employee_profile") or not actor.employee_profile:
-            raise PermissionDeniedError("Akun Anda tidak terhubung dengan profil pegawai/guru.")
+    # 3. Authorization validation: strictly assigned teacher/homeroom
+    require_roles(actor, ["Guru", "Wali Kelas"])
+    if not hasattr(actor, "employee_profile") or not actor.employee_profile:
+        raise PermissionDeniedError("Akun Anda tidak terhubung dengan profil pegawai/guru.")
 
-        has_assignment = ClassAssignment.objects.filter(
+    has_assignment = (
+        ClassAssignment.objects.filter(
             employee=actor.employee_profile,
             school_class=school_class,
             start_date__lte=payload.date,
-        ).filter(
-            Q(end_date__isnull=True) | Q(end_date__gte=payload.date)
-        ).exists()
+        )
+        .filter(Q(end_date__isnull=True) | Q(end_date__gte=payload.date))
+        .exists()
+    )
 
-        if not has_assignment:
-            raise PermissionDeniedError("Anda tidak memiliki penugasan aktif di kelas ini pada tanggal tersebut.")
+    if not has_assignment:
+        raise PermissionDeniedError("Anda tidak memiliki penugasan aktif di kelas ini pada tanggal tersebut.")
 
     # 4. Duplicate students check in payload
     student_ids = [item.student_id for item in payload.items]
@@ -54,9 +56,9 @@ def save_bulk_attendance(
         Enrollment.objects.filter(
             school_class=school_class,
             start_date__lte=payload.date,
-        ).filter(
-            Q(end_date__isnull=True) | Q(end_date__gte=payload.date)
-        ).values_list("student_id", flat=True)
+        )
+        .filter(Q(end_date__isnull=True) | Q(end_date__gte=payload.date))
+        .values_list("student_id", flat=True)
     )
 
     invalid_students = [sid for sid in student_ids if sid not in enrolled_ids]
@@ -81,8 +83,7 @@ def save_bulk_attendance(
 
     # 6. Bulk persistence with history
     existing_records = {
-        a.student_id: a
-        for a in Attendance.objects.filter(school_class=school_class, date=payload.date)
+        a.student_id: a for a in Attendance.objects.filter(school_class=school_class, date=payload.date)
     }
 
     to_create = []
@@ -120,6 +121,7 @@ def save_bulk_attendance(
         cache.delete("dashboard:attendance_metrics")
 
     transaction.on_commit(invalidate_cache)
+    transaction.on_commit(invalidate_dashboard_cache)
 
     ActivityLog.objects.create(
         actor=actor,
