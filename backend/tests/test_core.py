@@ -20,6 +20,26 @@ def test_sqlite_connection_and_wal():
     assert journal_mode.lower() in ("wal", "memory")
 
 
+def test_sqlite_isolated_file_based_wal_and_fk_pragmas(tmp_path):
+    """Verify that an isolated file-based SQLite database explicitly enforces foreign_keys=ON and journal_mode=WAL."""
+    import sqlite3
+
+    db_file = tmp_path / "pragma_test.db"
+    conn = sqlite3.connect(str(db_file))
+    cur = conn.cursor()
+    cur.execute("PRAGMA foreign_keys = ON;")
+    cur.execute("PRAGMA journal_mode = WAL;")
+
+    cur.execute("PRAGMA foreign_keys;")
+    fk = cur.fetchone()[0]
+    cur.execute("PRAGMA journal_mode;")
+    jm = cur.fetchone()[0]
+    conn.close()
+
+    assert fk == 1
+    assert jm.lower() == "wal"
+
+
 def test_health_check_endpoint(client: Client):
     """Verify GET /api/health returns 200 and expected payload."""
     response = client.get("/api/health")
