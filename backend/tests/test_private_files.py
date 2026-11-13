@@ -147,3 +147,33 @@ def test_download_document_rbac_boundaries(client, files_env):
     guru_headers = {"HTTP_AUTHORIZATION": f"Bearer {files_env['tokens']['Guru']}"}
     res_guru_dl = client.get(f"/api/administration/documents/{doc_id}/download", **guru_headers)
     assert res_guru_dl.status_code == 403
+
+
+@pytest.mark.django_db
+def test_upload_failure_triggers_orphan_file_cleanup(client, files_env, monkeypatch):
+    """When database write fails after file creation, orphaned file on disk must be unlinked."""
+    from pathlib import Path
+
+    from django.conf import settings
+
+    from apps.administration.services import upload_service_document
+
+    tu_user = files_env["users"]["Tata Usaha"]
+    sr_id = files_env["request"].id
+
+    valid_file = SimpleUploadedFile("test_orphan.pdf", b"%PDF-1.4 sample content %%EOF", content_type="application/pdf")
+
+    # Monkeypatch Document.objects.create to simulate database error after file writing
+    def mock_create(*args, **kwargs):
+        raise RuntimeError("Database connection lost during document insert")
+
+    monkeypatch.setattr(Document.objects, "create", mock_create)
+
+    with pytest.raises(RuntimeError):
+        upload_service_document(sr_id, valid_file, tu_user)
+
+    # Verify no stray files remain in PRIVATE_MEDIA_ROOT matching the uploaded content
+    private_dir = Path(settings.PRIVATE_MEDIA_ROOT)
+    for p in private_dir.iterdir():
+        if p.is_file():
+            assert p.read_bytes() != b"%PDF-1.4 sample content %%EOF"
