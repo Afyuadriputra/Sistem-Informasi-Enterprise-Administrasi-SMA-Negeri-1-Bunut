@@ -37,9 +37,7 @@ class Employee(models.Model):
     nip = models.CharField(max_length=30, unique=True, null=True, blank=True, db_index=True)
     name = models.CharField(max_length=150, db_index=True)
     phone = models.CharField(max_length=20, null=True, blank=True)
-    status = models.CharField(
-        max_length=20, choices=EmployeeStatusEnum.choices, default=EmployeeStatusEnum.AKTIF
-    )
+    status = models.CharField(max_length=20, choices=EmployeeStatusEnum.choices, default=EmployeeStatusEnum.AKTIF)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -107,9 +105,7 @@ class Student(models.Model):
 
 
 class Enrollment(models.Model):
-    student = models.ForeignKey(
-        Student, on_delete=models.CASCADE, related_name="enrollments", db_column="student_id"
-    )
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="enrollments", db_column="student_id")
     school_class = models.ForeignKey(
         SchoolClass, on_delete=models.CASCADE, related_name="enrollments", db_column="class_id"
     )
