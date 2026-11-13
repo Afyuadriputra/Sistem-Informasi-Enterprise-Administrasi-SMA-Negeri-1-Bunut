@@ -60,9 +60,7 @@ def reports_setup(db):
     cls2 = SchoolClass.objects.create(academic_year=ay, name="X-MIPA-2", level=10)
 
     # Assign Guru to cls1 only
-    ClassAssignment.objects.create(
-        employee=emp, school_class=cls1, role="GURU_MAPEL", start_date="2026-07-01"
-    )
+    ClassAssignment.objects.create(employee=emp, school_class=cls1, role="GURU_MAPEL", start_date="2026-07-01")
 
     # Students
     std1 = Student.objects.create(student_number="S001", name="Siswa Satu", gender="LAKI_LAKI", status="AKTIF")
@@ -193,26 +191,32 @@ class TestReportsModule:
             **guru_h,
         )
         assert res_guru_cls1.status_code == 200
-        assert (
-            res_guru_cls1["Content-Type"]
-            == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+        assert res_guru_cls1["Content-Type"] == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         # Parse Excel bytes
         excel_wb = openpyxl.load_workbook(io.BytesIO(res_guru_cls1.content))
         sheet = excel_wb.active
         assert sheet.title == "Rekap Kehadiran"
 
-        # 4. Admin attempt all classes -> 200 OK
+        # 4. Admin attempt -> 403 Forbidden (RBAC least-privilege: denied for standalone Admin)
         res_admin = client.get(
             f"/api/reports/attendance.xlsx?start_date={today_str}&end_date={today_str}",
             **admin_h,
         )
-        assert res_admin.status_code == 200
+        assert res_admin.status_code == 403
+
+        # 5. Pimpinan attempt all classes -> 200 OK
+        pimpinan_h = {"HTTP_AUTHORIZATION": f"Bearer {reports_setup['pimpinan_token']}"}
+        res_pimpinan = client.get(
+            f"/api/reports/attendance.xlsx?start_date={today_str}&end_date={today_str}",
+            **pimpinan_h,
+        )
+        assert res_pimpinan.status_code == 200
 
     def test_be_10_administration_pdf_export(self, client, reports_setup):
         admin_h = {"HTTP_AUTHORIZATION": f"Bearer {reports_setup['admin_token']}"}
         tu_h = {"HTTP_AUTHORIZATION": f"Bearer {reports_setup['tu_token']}"}
         guru_h = {"HTTP_AUTHORIZATION": f"Bearer {reports_setup['guru_token']}"}
+        pimpinan_h = {"HTTP_AUTHORIZATION": f"Bearer {reports_setup['pimpinan_token']}"}
 
         today_str = date.today().isoformat()
         start_str = (date.today() - timedelta(days=30)).isoformat()
@@ -233,13 +237,20 @@ class TestReportsModule:
         assert res_tu["Content-Type"] == "application/pdf"
         assert res_tu.content.startswith(b"%PDF-")
 
-        # 3. Admin attempt -> 200 OK PDF binary
+        # 3. Admin attempt -> 403 Forbidden (RBAC least privilege: TU and Pimpinan only)
         res_admin = client.get(
             f"/api/reports/administration.pdf?start_date={start_str}&end_date={today_str}",
             **admin_h,
         )
-        assert res_admin.status_code == 200
-        assert res_admin.content.startswith(b"%PDF-")
+        assert res_admin.status_code == 403
+
+        # 4. Pimpinan attempt -> 200 OK PDF binary
+        res_pimpinan = client.get(
+            f"/api/reports/administration.pdf?start_date={start_str}&end_date={today_str}",
+            **pimpinan_h,
+        )
+        assert res_pimpinan.status_code == 200
+        assert res_pimpinan.content.startswith(b"%PDF-")
 
     def test_audit_logs_query_and_filtering(self, client, reports_setup):
         admin_h = {"HTTP_AUTHORIZATION": f"Bearer {reports_setup['admin_token']}"}
