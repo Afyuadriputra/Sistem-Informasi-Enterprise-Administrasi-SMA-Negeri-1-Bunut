@@ -24,6 +24,7 @@ from apps.master_data.schemas import (
     StudentCreateRequest,
     StudentUpdateRequest,
 )
+from apps.reports.services import invalidate_dashboard_cache
 
 
 # Academic Year Services
@@ -209,6 +210,7 @@ def create_student(data: StudentCreateRequest, actor: User) -> Student:
         resource_type="master_data",
         resource_id=str(student.id),
     )
+    transaction.on_commit(invalidate_dashboard_cache)
     return student
 
 
@@ -232,6 +234,7 @@ def update_student(student_id: int, data: StudentUpdateRequest, actor: User) -> 
         resource_type="master_data",
         resource_id=str(student.id),
     )
+    transaction.on_commit(invalidate_dashboard_cache)
     return student
 
 
@@ -262,6 +265,7 @@ def create_enrollment(data: EnrollmentCreateRequest, actor: User) -> Enrollment:
         resource_type="master_data",
         resource_id=str(enr.id),
     )
+    transaction.on_commit(invalidate_dashboard_cache)
     return enr
 
 
@@ -283,6 +287,7 @@ def update_enrollment(enrollment_id: int, data: EnrollmentUpdateRequest, actor: 
         resource_type="master_data",
         resource_id=str(enr.id),
     )
+    transaction.on_commit(invalidate_dashboard_cache)
     return enr
 
 
@@ -300,6 +305,7 @@ def cancel_enrollment(enrollment_id: int, actor: User):
         resource_type="master_data",
         resource_id=str(enr_id),
     )
+    transaction.on_commit(invalidate_dashboard_cache)
 
 
 # Class Assignment Services
