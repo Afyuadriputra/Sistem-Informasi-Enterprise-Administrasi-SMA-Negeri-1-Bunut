@@ -17,16 +17,12 @@ if env_file.exists():
                 os.environ.setdefault(key.strip(), val.strip())
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY", "dev-insecure-secret-key-change-in-production-bunut-2026-xyz"
-)
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-insecure-secret-key-change-in-production-bunut-2026-xyz")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() in ("true", "1", "yes")
 
-allowed_hosts_raw = os.environ.get(
-    "DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,testserver"
-)
+allowed_hosts_raw = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,testserver")
 ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_raw.split(",") if h.strip()]
 
 # Application definition
@@ -162,9 +158,7 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Private Media Storage (outside public web root)
-PRIVATE_MEDIA_ROOT = Path(
-    os.environ.get("PRIVATE_MEDIA_ROOT", BASE_DIR / "private_media")
-).resolve()
+PRIVATE_MEDIA_ROOT = Path(os.environ.get("PRIVATE_MEDIA_ROOT", BASE_DIR / "private_media")).resolve()
 PRIVATE_MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
 
 # Default primary key field type
