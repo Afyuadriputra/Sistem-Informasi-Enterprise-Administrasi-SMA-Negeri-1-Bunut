@@ -20,7 +20,12 @@ from apps.reports.schemas import (
 from apps.student_affairs.models import CaseStatusEnum, StudentCase
 
 
-def get_dashboard_metrics(actor: User, use_cache: bool = True) -> DashboardMetricsResponse:
+def get_dashboard_metrics(
+    actor: User,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    use_cache: bool = True,
+) -> DashboardMetricsResponse:
     # Determine primary role
     user_roles = {r.name for r in actor.roles.all()}
     if "Administrator" in user_roles:
@@ -37,7 +42,7 @@ def get_dashboard_metrics(actor: User, use_cache: bool = True) -> DashboardMetri
         role_scope = list(user_roles)[0] if user_roles else "Umum"
 
     clean_scope = role_scope.replace(" ", "_").lower()
-    cache_key = f"dashboard:metrics:{actor.id}:{clean_scope}"
+    cache_key = f"dashboard:metrics:{actor.id}:{clean_scope}:{start_date}:{end_date}"
     if use_cache:
         cached_data = cache.get(cache_key)
         if cached_data:
@@ -46,12 +51,21 @@ def get_dashboard_metrics(actor: User, use_cache: bool = True) -> DashboardMetri
     today = timezone.localdate()
     now = timezone.now()
 
+    def _get_att_date_filter():
+        if start_date and end_date:
+            return {"date__gte": start_date, "date__lte": end_date}
+        elif start_date:
+            return {"date__gte": start_date}
+        elif end_date:
+            return {"date__lte": end_date}
+        return {"date": today}
+
+    att_date_filter = _get_att_date_filter()
+
     # Calculate metrics by role
     if role_scope in ("Administrator", "Pimpinan"):
         active_students = Student.objects.filter(status="AKTIF").count()
-        pending_cases = StudentCase.objects.filter(
-            status__in=[CaseStatusEnum.BARU, CaseStatusEnum.DIPROSES]
-        ).count()
+        pending_cases = StudentCase.objects.filter(status__in=[CaseStatusEnum.BARU, CaseStatusEnum.DIPROSES]).count()
 
         if role_scope == "Pimpinan":
             pending_requests = ServiceRequest.objects.filter(
@@ -66,7 +80,7 @@ def get_dashboard_metrics(actor: User, use_cache: bool = True) -> DashboardMetri
                 ]
             ).count()
 
-        att_today_qs = Attendance.objects.filter(date=today)
+        att_today_qs = Attendance.objects.filter(**att_date_filter)
         recorded_today = att_today_qs.exists()
         att_rate = None
         if recorded_today:
@@ -86,10 +100,8 @@ def get_dashboard_metrics(actor: User, use_cache: bool = True) -> DashboardMetri
 
     elif role_scope == "Kesiswaan":
         active_students = Student.objects.filter(status="AKTIF").count()
-        pending_cases = StudentCase.objects.filter(
-            status__in=[CaseStatusEnum.BARU, CaseStatusEnum.DIPROSES]
-        ).count()
-        att_today_qs = Attendance.objects.filter(date=today)
+        pending_cases = StudentCase.objects.filter(status__in=[CaseStatusEnum.BARU, CaseStatusEnum.DIPROSES]).count()
+        att_today_qs = Attendance.objects.filter(**att_date_filter)
         recorded_today = att_today_qs.exists()
         att_rate = None
         if recorded_today:
@@ -139,19 +151,23 @@ def get_dashboard_metrics(actor: User, use_cache: bool = True) -> DashboardMetri
         )
 
         homeroom_class_ids = list(
-            ClassAssignment.objects.filter(
-                employee__user=actor, role__in=["WALI_KELAS", "Wali Kelas"]
-            ).values_list("school_class_id", flat=True)
+            ClassAssignment.objects.filter(employee__user=actor, role__in=["WALI_KELAS", "Wali Kelas"]).values_list(
+                "school_class_id", flat=True
+            )
         )
         pending_cases = 0
         if homeroom_class_ids:
-            pending_cases = StudentCase.objects.filter(
-                student__enrollments__school_class_id__in=homeroom_class_ids,
-                student__enrollments__end_date__isnull=True,
-                status__in=[CaseStatusEnum.BARU, CaseStatusEnum.DIPROSES],
-            ).distinct().count()
+            pending_cases = (
+                StudentCase.objects.filter(
+                    student__enrollments__school_class_id__in=homeroom_class_ids,
+                    student__enrollments__end_date__isnull=True,
+                    status__in=[CaseStatusEnum.BARU, CaseStatusEnum.DIPROSES],
+                )
+                .distinct()
+                .count()
+            )
 
-        att_today_qs = Attendance.objects.filter(date=today, school_class_id__in=assigned_class_ids)
+        att_today_qs = Attendance.objects.filter(school_class_id__in=assigned_class_ids, **att_date_filter)
         recorded_today = att_today_qs.exists()
         att_rate = None
         if recorded_today:
