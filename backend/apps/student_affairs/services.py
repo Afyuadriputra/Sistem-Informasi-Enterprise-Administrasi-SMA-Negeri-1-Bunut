@@ -3,9 +3,20 @@ from typing import Optional
 from django.db import transaction
 
 from apps.accounts.models import ActivityLog, User
-from apps.core.exceptions import BusinessValidationError, ConcurrencyConflictError, NotFoundError
-from apps.master_data.models import Employee, Student
-from apps.student_affairs.models import CaseActionEnum, CaseEvent, CaseStatusEnum, StudentCase
+from apps.core.exceptions import (
+    BusinessValidationError,
+    ConcurrencyConflictError,
+    NotFoundError,
+)
+from apps.core.security import require_roles
+from apps.master_data.models import Student
+from apps.reports.services import invalidate_dashboard_cache
+from apps.student_affairs.models import (
+    CaseActionEnum,
+    CaseEvent,
+    CaseStatusEnum,
+    StudentCase,
+)
 from apps.student_affairs.schemas import (
     CaseTransitionRequest,
     CaseTransitionResponse,
@@ -14,25 +25,18 @@ from apps.student_affairs.schemas import (
 
 
 @transaction.atomic
-def create_case(
-    data: StudentCaseCreateRequest, actor: User, request_id: Optional[str] = None
-) -> StudentCase:
+def create_case(data: StudentCaseCreateRequest, actor: User, request_id: Optional[str] = None) -> StudentCase:
+    require_roles(actor, ["Kesiswaan", "Wali Kelas"])
     student = Student.objects.filter(id=data.student_id).first()
     if not student:
-        raise NotFoundError("Siswa tidak ditemukan.")
-
-    assigned_to = None
-    if data.assigned_to_id:
-        assigned_to = Employee.objects.filter(id=data.assigned_to_id).first()
-        if not assigned_to:
-            raise NotFoundError("Pegawai pembimbing tidak ditemukan.")
+        raise NotFoundError("Data siswa tidak ditemukan.")
 
     case = StudentCase.objects.create(
         student=student,
         title=data.title,
         summary=data.summary,
         status=CaseStatusEnum.BARU,
-        assigned_to=assigned_to,
+        assigned_to=actor.employee_profile if hasattr(actor, "employee_profile") else None,
         version=1,
     )
 
@@ -41,7 +45,7 @@ def create_case(
         action="BUAT_KASUS",
         initial_status=CaseStatusEnum.BARU,
         final_status=CaseStatusEnum.BARU,
-        note="Kasus kesiswaan dibuka.",
+        note=data.summary,
         actor=actor,
     )
 
@@ -51,8 +55,9 @@ def create_case(
         resource_type="student_affairs",
         resource_id=str(case.id),
         request_id=request_id,
-        metadata=f'{{"student_id": {student.id}, "title": "{case.title}"}}',
+        metadata=f'{{"case_title": "{case.title}"}}',
     )
+    transaction.on_commit(invalidate_dashboard_cache)
     return case
 
 
@@ -60,6 +65,7 @@ def create_case(
 def transition_case(
     case_id: int, data: CaseTransitionRequest, actor: User, request_id: Optional[str] = None
 ) -> CaseTransitionResponse:
+    require_roles(actor, ["Kesiswaan"])
     case = StudentCase.objects.select_for_update().filter(id=case_id).first()
     if not case:
         raise NotFoundError("Kasus kesiswaan tidak ditemukan.")
@@ -85,6 +91,8 @@ def transition_case(
     elif data.action == CaseActionEnum.CATAT_TINDAKAN:
         if case.status not in (CaseStatusEnum.BARU, CaseStatusEnum.DIPROSES):
             raise BusinessValidationError("Aksi CATAT_TINDAKAN hanya dapat dilakukan pada kasus yang aktif.")
+        if not data.note or not data.note.strip():
+            raise BusinessValidationError("Catatan tindakan konseling wajib diisi.")
         final_status = case.status  # status unchanged
 
     elif data.action == CaseActionEnum.SELESAIKAN:
@@ -95,6 +103,8 @@ def transition_case(
     elif data.action == CaseActionEnum.BATALKAN:
         if case.status not in (CaseStatusEnum.BARU, CaseStatusEnum.DIPROSES):
             raise BusinessValidationError("Kasus tidak dapat dibatalkan pada status saat ini.")
+        if not data.note or not data.note.strip():
+            raise BusinessValidationError("Alasan pembatalan kasus wajib diisi.")
         final_status = CaseStatusEnum.DIBATALKAN
 
     else:
@@ -121,6 +131,7 @@ def transition_case(
         request_id=request_id,
         metadata=f'{{"action": "{data.action}", "version": {case.version}}}',
     )
+    transaction.on_commit(invalidate_dashboard_cache)
 
     return CaseTransitionResponse(
         id=case.id,
