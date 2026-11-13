@@ -49,7 +49,7 @@ def list_service_requests(
     actor: Optional[User] = None,
 ) -> ServiceRequestListResponse:
     if actor:
-        require_roles(actor, ["Administrator", "Tata Usaha", "Pimpinan"])
+        require_roles(actor, ["Tata Usaha", "Pimpinan"])
 
     qs = ServiceRequest.objects.select_related("service_type", "student").all()
 
@@ -93,7 +93,7 @@ def list_service_requests(
 
 
 def get_service_request_detail(request_id: int, actor: User) -> ServiceRequestDetailResponse:
-    require_roles(actor, ["Administrator", "Tata Usaha", "Pimpinan"])
+    require_roles(actor, ["Tata Usaha", "Pimpinan"])
 
     req = (
         ServiceRequest.objects.select_related("service_type", "student")
@@ -157,7 +157,7 @@ def list_archived_documents(
     actor: Optional[User] = None,
 ) -> DocumentListResponse:
     if actor:
-        require_roles(actor, ["Administrator", "Tata Usaha", "Pimpinan"])
+        require_roles(actor, ["Tata Usaha", "Pimpinan"])
 
     qs = Document.objects.select_related("request").all()
 
@@ -194,7 +194,7 @@ def list_archived_documents(
 
 
 def get_document_for_download(document_id: int, actor: User) -> Tuple[Document, Path]:
-    require_roles(actor, ["Administrator", "Tata Usaha", "Pimpinan"])
+    require_roles(actor, ["Tata Usaha", "Pimpinan"])
 
     doc = Document.objects.filter(id=document_id).first()
     if not doc:
