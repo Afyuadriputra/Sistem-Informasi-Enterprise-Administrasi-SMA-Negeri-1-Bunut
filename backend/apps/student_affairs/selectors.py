@@ -1,13 +1,13 @@
 from typing import Optional
 
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 
 from apps.accounts.models import User
 from apps.core.exceptions import NotFoundError, PermissionDeniedError
 from apps.core.pagination import paginate_queryset
-from apps.core.security import check_roles
+from apps.core.security import check_roles, require_roles
 from apps.master_data.models import ClassAssignment, Enrollment
-from apps.student_affairs.models import StudentCase
+from apps.student_affairs.models import CaseActionEnum, StudentCase
 from apps.student_affairs.schemas import (
     CaseEventItem,
     StudentCaseDetailResponse,
@@ -17,10 +17,11 @@ from apps.student_affairs.schemas import (
 
 
 def _get_accessible_student_ids(actor: User) -> Optional[set]:
-    """Returns None if actor can access all students (Admin/Kesiswaan/Pimpinan),
+    """Returns None if actor can access all students (Kesiswaan),
     or set of student_ids if limited to homeroom class (Wali Kelas).
+    Administrator and other roles are denied per RBAC_MATRIX.md Separation of Duties.
     """
-    if check_roles(actor, ["Administrator", "Kesiswaan", "Pimpinan"]):
+    if check_roles(actor, ["Kesiswaan"]):
         return None
 
     if check_roles(actor, ["Wali Kelas"]):
@@ -52,7 +53,19 @@ def list_cases(
     page_size: int = 20,
     actor: Optional[User] = None,
 ) -> StudentCaseListResponse:
-    qs = StudentCase.objects.select_related("student", "assigned_to").order_by("-created_at")
+    if actor:
+        require_roles(actor, ["Kesiswaan", "Wali Kelas"])
+
+    active_enr_prefetch = Prefetch(
+        "student__enrollments",
+        queryset=Enrollment.objects.filter(end_date__isnull=True).select_related("school_class"),
+        to_attr="active_enrollments_list",
+    )
+    qs = (
+        StudentCase.objects.select_related("student", "assigned_to")
+        .prefetch_related(active_enr_prefetch)
+        .order_by("-created_at")
+    )
 
     if actor:
         allowed_students = _get_accessible_student_ids(actor)
@@ -70,8 +83,9 @@ def list_cases(
 
     items = []
     for c in paginated["items"]:
-        # Find active class name if available
-        active_enr = c.student.enrollments.filter(end_date__isnull=True).select_related("school_class").first()
+        # Find active class name from prefetched active enrollments
+        active_enrs = getattr(c.student, "active_enrollments_list", [])
+        active_enr = active_enrs[0] if active_enrs else None
         class_name = active_enr.school_class.name if active_enr else None
 
         items.append(
@@ -100,30 +114,42 @@ def list_cases(
 
 
 def get_case_detail(case_id: int, actor: User) -> StudentCaseDetailResponse:
+    require_roles(actor, ["Kesiswaan", "Wali Kelas"])
+
     case = StudentCase.objects.select_related("student", "assigned_to").filter(id=case_id).first()
     if not case:
         raise NotFoundError("Kasus kesiswaan tidak ditemukan.")
 
-    allowed_students = _get_accessible_student_ids(actor)
-    if allowed_students is not None and case.student_id not in allowed_students:
-        raise PermissionDeniedError("Anda tidak memiliki wewenang membaca detail kasus siswa ini.")
+    user_roles = {r.name for r in actor.roles.all()}
+    is_kesiswaan = "Kesiswaan" in user_roles
+
+    if not is_kesiswaan:
+        allowed_students = _get_accessible_student_ids(actor)
+        if allowed_students is None or case.student_id not in allowed_students:
+            raise PermissionDeniedError("Anda tidak memiliki wewenang membaca detail kasus siswa ini.")
 
     active_enr = case.student.enrollments.filter(end_date__isnull=True).select_related("school_class").first()
     class_name = active_enr.school_class.name if active_enr else None
 
-    events = [
-        CaseEventItem(
-            id=e.id,
-            action=e.action,
-            initial_status=e.initial_status,
-            final_status=e.final_status,
-            note=e.note,
-            actor_id=e.actor_id,
-            actor_name=e.actor.username,
-            created_at=e.created_at,
+    # Server-Side Response Filtering per DEC-TECH-18
+    events = []
+    for e in case.events.select_related("actor").order_by("created_at"):
+        note = e.note
+        if not is_kesiswaan and e.action == CaseActionEnum.CATAT_TINDAKAN:
+            note = "[Catatan konseling privat - Terproteksi]"
+
+        events.append(
+            CaseEventItem(
+                id=e.id,
+                action=e.action,
+                initial_status=e.initial_status,
+                final_status=e.final_status,
+                note=note,
+                actor_id=e.actor_id,
+                actor_name=e.actor.username,
+                created_at=e.created_at,
+            )
         )
-        for e in case.events.select_related("actor").order_by("created_at")
-    ]
 
     return StudentCaseDetailResponse(
         id=case.id,
