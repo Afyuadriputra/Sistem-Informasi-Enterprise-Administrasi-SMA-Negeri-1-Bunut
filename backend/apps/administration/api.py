@@ -33,7 +33,7 @@ def list_service_types(request):
 
 @router.post("/service-types", auth=jwt_auth, response={201: ServiceTypeItem}, operation_id="createServiceType")
 def create_service_type(request, data: ServiceTypeCreateRequest):
-    require_roles(request.user, ["Administrator", "Tata Usaha"])
+    require_roles(request.user, ["Administrator"])
     st = services.create_service_type(data=data, actor=request.user)
     item = ServiceTypeItem(
         id=st.id,
@@ -48,7 +48,7 @@ def create_service_type(request, data: ServiceTypeCreateRequest):
 
 @router.patch("/service-types/{id}", auth=jwt_auth, response=ServiceTypeItem, operation_id="updateServiceType")
 def update_service_type(request, id: int, data: ServiceTypeUpdateRequest):
-    require_roles(request.user, ["Administrator", "Tata Usaha"])
+    require_roles(request.user, ["Administrator"])
     st = services.update_service_type(type_id=id, data=data, actor=request.user)
     return ServiceTypeItem(
         id=st.id,
@@ -81,7 +81,7 @@ def list_service_requests(
 
 @router.post("/requests", auth=jwt_auth, response={201: ServiceRequestItem}, operation_id="createServiceRequest")
 def create_service_request(request, data: ServiceRequestCreateRequest):
-    require_roles(request.user, ["Administrator", "Tata Usaha"])
+    require_roles(request.user, ["Tata Usaha"])
     request_id_header = getattr(request, "request_id", None)
     req = services.create_service_request(data=data, actor=request.user, request_id=request_id_header)
     item = ServiceRequestItem(
