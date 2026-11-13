@@ -171,3 +171,49 @@ def test_dec_tech_18_catat_tindakan_requires_notes(client, privacy_env):
     )
     assert res.status_code == 422
     assert "catatan tindakan" in res.json()["message"].lower()
+
+
+@pytest.mark.django_db
+def test_counseling_privacy_audit_with_synthetic_marker(client, privacy_env):
+    """Audit privacy across list, detail, activity logs and cache using synthetic marker."""
+    from apps.accounts.models import ActivityLog
+
+    case_id = privacy_env["case"].id
+    wali_token = privacy_env["tokens"]["Wali Kelas"]
+    kes_token = privacy_env["tokens"]["Kesiswaan"]
+
+    synthetic_marker = "MARKER_SECRET_COUNSELING_TRAUMA_CONFIDENTIAL_9988"
+
+    # Add confidential event with synthetic marker
+    CaseEvent.objects.create(
+        case=privacy_env["case"],
+        actor=privacy_env["users"]["Kesiswaan"],
+        action="CATAT_TINDAKAN",
+        initial_status=CaseStatusEnum.DIPROSES,
+        final_status=CaseStatusEnum.DIPROSES,
+        note=f"Konseling khusus: {synthetic_marker}",
+    )
+
+    # 1. Audit list_cases endpoint with Wali Kelas token
+    wali_headers = {"HTTP_AUTHORIZATION": f"Bearer {wali_token}"}
+    res_list = client.get("/api/student-affairs/cases", **wali_headers)
+    assert res_list.status_code == 200
+    assert synthetic_marker not in res_list.content.decode("utf-8")
+
+    # 2. Audit get_case_detail with Wali Kelas token
+    res_detail_wali = client.get(f"/api/student-affairs/cases/{case_id}", **wali_headers)
+    assert res_detail_wali.status_code == 200
+    assert synthetic_marker not in res_detail_wali.content.decode("utf-8")
+    assert "[Catatan konseling privat - Terproteksi]" in res_detail_wali.content.decode("utf-8")
+
+    # 3. Audit get_case_detail with Kesiswaan token (counselor must see it)
+    kes_headers = {"HTTP_AUTHORIZATION": f"Bearer {kes_token}"}
+    res_detail_kes = client.get(f"/api/student-affairs/cases/{case_id}", **kes_headers)
+    assert res_detail_kes.status_code == 200
+    assert synthetic_marker in res_detail_kes.content.decode("utf-8")
+
+    # 4. Audit ActivityLog metadata
+    logs = ActivityLog.objects.filter(resource_type="student_affairs")
+    for log_item in logs:
+        if log_item.metadata:
+            assert synthetic_marker not in log_item.metadata
