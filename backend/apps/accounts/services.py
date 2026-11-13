@@ -126,6 +126,7 @@ def rotate_refresh_token(refresh_token_str: str, ip: str, request_id: Optional[s
         raise AuthenticationFailedError("Identifier token tidak valid.")
 
     family_id = payload.get("family_id")
+    # Check if family is revoked
     if family_id:
         try:
             if cache.get(f"blacklist_family:{family_id}"):
@@ -135,12 +136,13 @@ def rotate_refresh_token(refresh_token_str: str, ip: str, request_id: Optional[s
         except Exception:
             raise AuthenticationFailedError("Layanan verifikasi sesi tidak tersedia (fail-closed).")
 
+    # Atomic addition to blacklist: returns True on first consumption, False if already consumed (token reuse)
     try:
-        is_blacklisted = bool(cache.get(f"blacklist:{jti}"))
+        added = cache.add(f"blacklist:{jti}", True, timeout=7 * 86400)
     except Exception:
         raise AuthenticationFailedError("Layanan verifikasi sesi tidak tersedia (fail-closed).")
 
-    if is_blacklisted:
+    if not added:
         if family_id:
             try:
                 cache.set(f"blacklist_family:{family_id}", True, timeout=7 * 86400)
@@ -152,12 +154,6 @@ def rotate_refresh_token(refresh_token_str: str, ip: str, request_id: Optional[s
     user = User.objects.filter(id=user_id).first()
     if not user or not user.is_active:
         raise AuthenticationFailedError("Pengguna tidak aktif atau tidak ditemukan.")
-
-    # Blacklist old refresh token with fail-closed check
-    try:
-        cache.set(f"blacklist:{jti}", True, timeout=7 * 86400)
-    except Exception:
-        raise AuthenticationFailedError("Gagal mencatat pencabutan token (fail-closed).")
 
     # Issue new pair within same family
     tokens = issue_token_pair(user, family_id=family_id)
