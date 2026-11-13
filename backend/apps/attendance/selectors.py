@@ -17,9 +17,7 @@ from apps.core.security import check_roles
 from apps.master_data.models import ClassAssignment, Enrollment, SchoolClass
 
 
-def get_attendance_roster(
-    class_id: int, target_date: date, actor: User
-) -> AttendanceRosterResponse:
+def get_attendance_roster(class_id: int, target_date: date, actor: User) -> AttendanceRosterResponse:
     school_class = SchoolClass.objects.filter(id=class_id).first()
     if not school_class:
         raise NotFoundError("Kelas tidak ditemukan.")
@@ -29,30 +27,32 @@ def get_attendance_roster(
         if not hasattr(actor, "employee_profile") or not actor.employee_profile:
             raise PermissionDeniedError("Akun Anda tidak terhubung dengan profil pegawai/guru.")
 
-        has_assignment = ClassAssignment.objects.filter(
-            employee=actor.employee_profile,
-            school_class=school_class,
-            start_date__lte=target_date,
-        ).filter(
-            Q(end_date__isnull=True) | Q(end_date__gte=target_date)
-        ).exists()
+        has_assignment = (
+            ClassAssignment.objects.filter(
+                employee=actor.employee_profile,
+                school_class=school_class,
+                start_date__lte=target_date,
+            )
+            .filter(Q(end_date__isnull=True) | Q(end_date__gte=target_date))
+            .exists()
+        )
 
         if not has_assignment:
             raise PermissionDeniedError("Anda tidak memiliki penugasan aktif di kelas ini pada tanggal tersebut.")
 
     # Fetch enrolled students
-    enrollments = Enrollment.objects.select_related("student").filter(
-        school_class=school_class,
-        start_date__lte=target_date,
-    ).filter(
-        Q(end_date__isnull=True) | Q(end_date__gte=target_date)
-    ).order_by("student__name")
+    enrollments = (
+        Enrollment.objects.select_related("student")
+        .filter(
+            school_class=school_class,
+            start_date__lte=target_date,
+        )
+        .filter(Q(end_date__isnull=True) | Q(end_date__gte=target_date))
+        .order_by("student__name")
+    )
 
     # Fetch existing attendance on target_date
-    attendances = {
-        a.student_id: a
-        for a in Attendance.objects.filter(school_class=school_class, date=target_date)
-    }
+    attendances = {a.student_id: a for a in Attendance.objects.filter(school_class=school_class, date=target_date)}
 
     students = []
     for enr in enrollments:
@@ -90,9 +90,9 @@ def get_attendance_recap(
             raise PermissionDeniedError("Akun Anda tidak terhubung dengan profil pegawai/guru.")
 
         assigned_class_ids = list(
-            ClassAssignment.objects.filter(
-                employee=actor.employee_profile, end_date__isnull=True
-            ).values_list("school_class_id", flat=True)
+            ClassAssignment.objects.filter(employee=actor.employee_profile, end_date__isnull=True).values_list(
+                "school_class_id", flat=True
+            )
         )
 
         if class_id:
