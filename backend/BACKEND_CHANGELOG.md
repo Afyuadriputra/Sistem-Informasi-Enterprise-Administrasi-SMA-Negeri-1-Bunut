@@ -155,3 +155,47 @@ Seluruh catatan pembaruan teknis pada pengembangan backend dari milestone BE-M1 
 - Dokumentasi:
   - Pembaruan laporan master `backend/BACKEND_IMPLEMENTATION_REPORT.md` dengan Bab 21 dan evaluasi 18 Acceptance Gates (G1 - G18).
   - Pembaruan status pelacakan pada `coordination/BACKEND_STATUS.md`.
+
+---
+
+## [BE-M9.1] - Infrastructure Verification, Concurrency Hardening & Final Backend Closure
+**Tanggal:** 13 November 2026
+
+### Ditambahkan & Diperbarui:
+- **Ekspansi Rangkaian Pengujian Otomatis (15 pengujian baru, total 93 pengujian lulus 100%):**
+  - `backend/tests/test_backup_restore.py` (1 tes): Pengujian disaster recovery sintesis untuk pencadangan dan pemulihan data (`dumpdata`/`loaddata`) serta pemulihan berkas privat fisik dengan verifikasi integritas hash SHA-256 byte-for-byte.
+  - `backend/tests/test_real_http_granian.py` (1 tes): Pengujian smoke test HTTP soket riil menggunakan server ASGI Granian pada ephemeral port dinamis melalui panggilan `urllib.request` langsung ke `/api/health`, `/api/auth/login`, dan endpoint 404.
+  - `backend/tests/test_concurrency.py` (ekspansi dari 2 menjadi 6 tes):
+    - Pengujian multi-threaded race condition rotasi token penyegaran JWT atomik via `ThreadPoolExecutor`.
+    - Pengujian persaingan konkurensi aktivasi tahun ajaran ganda (menjamin tepat 1 tahun ajaran aktif).
+    - Pengujian pencegahan penonaktifan admin terakhir secara konkruen (menjamin tidak ada admin lockout).
+    - Audit kesesuaian kontrak absensi massal terhadap pembaruan basi (*stale update audit*).
+  - `backend/tests/test_contract.py` (ekspansi dari 4 menjadi 8 tes):
+    - Verifikasi operasional endpoint pemantauan `/api/health` dengan penanganan tag sistem.
+    - Validasi kepatuhan skema global `ErrorEnvelope` (`code`, `message`, `details`, `request_id`).
+    - Validasi kontrak media type biner dan multipart/form-data (`/administration/requests/{id}/documents`, `/reports/attendance.xlsx`, `/reports/administration.pdf`).
+    - Validasi runtime envelope kesalahan pada endpoint API riil (HTTP 401, 404, 422).
+  - `backend/tests/test_privacy_dec_tech_18.py` (ekspansi dari 5 menjadi 6 tes):
+    - Audit kebocoran privasi bimbingan konseling menggunakan synthetic canary marker (`MARKER_SECRET_COUNSELING_TRAUMA_CONFIDENTIAL_9988`), membuktikan zero leakage pada daftar kasus, detail perwalian, dan log aktivitas.
+  - `backend/tests/test_private_files.py` (ekspansi dari 5 menjadi 6 tes):
+    - Pengujian pembersihan berkas yatim (*orphan file cleanup*) saat kegagalan transaksi database atau pembatalan unggahan berkas privat.
+  - `backend/tests/test_performance.py` (ekspansi dari 3 menjadi 5 tes):
+    - Pengukuran latensi daftar siswa dan roster absensi (p95 < 250 ms).
+    - Pengukuran latensi ekspor laporan biner Excel dan PDF (p95 < 1000 ms).
+  - `backend/tests/test_core.py` (ekspansi dari 5 menjadi 6 tes):
+    - Pengujian pemetaan pengecualian database lock SQLite `OperationalError` ke HTTP 409 `CONCURRENCY_CONFLICT`.
+  - `backend/tests/conftest.py`:
+    - Penambahan fixture autouse `test_private_media_root` yang mengisolasi `PRIVATE_MEDIA_ROOT` pengujian ke direktori sementara `tmp_path`, mencegah polusi berkas pada working tree.
+
+- **Penguatan Keamanan & Kontrol Konkurensi:**
+  - Penambahan operasi atomik `cache.add(f"blacklist:{jti}", True)` pada `backend/apps/accounts/services.py:rotate_refresh_token` untuk mengeliminasi celah race condition check-then-act pada rotasi token penyegaran JWT.
+
+- **Verifikasi Infrastruktur & Keselarasan Skema Basis Data:**
+  - Verifikasi tabel fisik basis data `school_classes` dan `enrollments` terbukti 100% selaras dengan baris 155 dan 185 pada `contracts/database.dbml`, menuntaskan rekonsiliasi deskriptif masa lalu.
+  - Verifikasi PostgreSQL 17 pada host Windows (port 5432) dengan `psycopg 3.3.9`; autentikasi menggunakan `scram-sha-256`. Gate G7 dinyatakan BLOCKED untuk koneksi live host tanpa kata sandi pengguna; dual-engine SQLite WAL mode terverifikasi 100%.
+  - Verifikasi Redis 7.0.15; ketiadaan daemon host Windows port 6379 mendasari sertifikasi Gate G8 sebagai BLOCKED untuk soket live host. Kebijakan fail-closed (sesi dan rate limiter) serta fail-open (cache) terverifikasi.
+
+- **Rekonsiliasi Dokumentasi Master:**
+  - Rekonsiliasi kontradiksi historis pada Bagian 1-20 `backend/BACKEND_IMPLEMENTATION_REPORT.md` agar konsisten dengan evaluasi Bab 21 dan penambahan Bab 22.
+  - Status kesiapan backend final disertifikasi sebagai `CONDITIONALLY_READY — BACKEND_IMPLEMENTED_WITH_VERIFICATION_BLOCKERS` (16 PASS, 2 BLOCKED pada lingkungan infrastruktur host eksternal).
+
