@@ -51,7 +51,7 @@ def post_case(
     request: HttpRequest,
     payload: StudentCaseCreateRequest,
 ):
-    require_roles(request.user, ["Administrator", "Kesiswaan", "Wali Kelas"])
+    require_roles(request.user, ["Kesiswaan", "Wali Kelas"])
     req_id = getattr(request, "request_id", None)
     case = create_case(payload, actor=request.user, request_id=req_id)
     detail = get_case_detail(case.id, actor=request.user)
@@ -80,6 +80,7 @@ def post_case(
     operation_id="getStudentCaseDetail",
 )
 def get_case(request: HttpRequest, id: int):
+    require_roles(request.user, ["Kesiswaan", "Wali Kelas"])
     return get_case_detail(id, actor=request.user)
 
 
@@ -93,6 +94,6 @@ def post_transition(
     id: int,
     payload: CaseTransitionRequest,
 ):
-    require_roles(request.user, ["Administrator", "Kesiswaan"])
+    require_roles(request.user, ["Kesiswaan"])
     req_id = getattr(request, "request_id", None)
     return transition_case(id, payload, actor=request.user, request_id=req_id)
