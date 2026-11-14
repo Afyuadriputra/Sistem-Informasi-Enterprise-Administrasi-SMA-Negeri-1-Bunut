@@ -30,7 +30,7 @@ class AttendanceBulkRequest(BaseModel):
     class_id: int
     date: date
     items: List[AttendanceBulkItem]
-    expected_roster_version: Optional[int] = None
+    expected_roster_version: int = 0
 
 
 class AttendanceBulkResponse(BaseModel):
