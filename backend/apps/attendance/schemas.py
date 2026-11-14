@@ -17,6 +17,7 @@ class AttendanceRosterResponse(BaseModel):
     class_name: str
     date: date
     students: List[AttendanceRosterItem]
+    roster_version: int = 0
 
 
 class AttendanceBulkItem(BaseModel):
@@ -29,6 +30,7 @@ class AttendanceBulkRequest(BaseModel):
     class_id: int
     date: date
     items: List[AttendanceBulkItem]
+    expected_roster_version: Optional[int] = None
 
 
 class AttendanceBulkResponse(BaseModel):
