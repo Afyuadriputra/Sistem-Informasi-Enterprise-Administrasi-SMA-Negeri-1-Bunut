@@ -37,6 +37,8 @@ def create_academic_year(data: AcademicYearCreateRequest, actor: User) -> Academ
         raise BusinessValidationError("Nama tahun ajaran sudah terdaftar.")
 
     if data.is_active:
+        # Lock all academic year rows to serialize concurrent active toggles
+        list(AcademicYear.objects.select_for_update().all())
         AcademicYear.objects.filter(is_active=True).update(is_active=False)
 
     ay = AcademicYear.objects.create(
@@ -77,6 +79,8 @@ def update_academic_year(year_id: int, data: AcademicYearUpdateRequest, actor: U
 
     if data.is_active is not None:
         if data.is_active:
+            # Lock all academic year rows to serialize concurrent active toggles
+            list(AcademicYear.objects.select_for_update().all())
             AcademicYear.objects.filter(is_active=True).exclude(id=ay.id).update(is_active=False)
         ay.is_active = data.is_active
 
