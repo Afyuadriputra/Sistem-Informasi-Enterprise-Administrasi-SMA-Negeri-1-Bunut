@@ -174,15 +174,23 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_EXPOSE_HEADERS = ["X-Request-ID"]
 
 # Cache & Redis configuration
-REDIS_URL = os.environ.get("REDIS_URL", "redis://127.0.0.1:6379/1")
+REDIS_URL = os.environ.get("REDIS_URL", "")
 
-# Use LocMemCache for local dev/testing if Redis is not running or unreachable
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "sie-bunut-cache",
+if REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": REDIS_URL,
+        }
     }
-}
+else:
+    # Use LocMemCache for local dev/testing if Redis is not explicitly configured
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "sie-bunut-cache",
+        }
+    }
 
 # Ninja JWT Settings
 NINJA_JWT = {
