@@ -77,7 +77,7 @@ def list_classes(
     page: int = 1,
     page_size: int = 20,
 ) -> ClassListResponse:
-    qs = SchoolClass.objects.select_related("academic_year").order_by("level", "name")
+    qs = SchoolClass.objects.select_related("academic_year").order_by("-academic_year__is_active", "level", "name")
     if academic_year_id:
         qs = qs.filter(academic_year_id=academic_year_id)
     if level:
@@ -219,6 +219,8 @@ def list_enrollments(
     page: int = 1,
     page_size: int = 20,
 ) -> EnrollmentListResponse:
+    if class_id is not None and page_size == 20:
+        page_size = 100
     qs = Enrollment.objects.select_related("student", "school_class").order_by("-start_date")
     if class_id:
         qs = qs.filter(school_class_id=class_id)
