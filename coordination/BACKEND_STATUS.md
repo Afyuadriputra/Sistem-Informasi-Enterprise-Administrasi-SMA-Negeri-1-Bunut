@@ -6,9 +6,9 @@
 |---|---|
 | Penanggung Jawab | **Backend Agent** |
 | Cakupan Writable | `backend/**`, `coordination/BACKEND_STATUS.md` |
-| Terakhir Diperbarui | 13 November 2026 |
-| Status Baseline | **CONDITIONALLY_READY — BACKEND_IMPLEMENTED_WITH_VERIFICATION_BLOCKERS** |
-| Readiness State | **CONDITIONALLY_READY — BACKEND_IMPLEMENTED_WITH_VERIFICATION_BLOCKERS** |
+| Terakhir Diperbarui | 14 November 2026 |
+| Status Baseline | **READY — LOCAL_APPLICATION_RUNNING_AND_POPULATED** |
+| Readiness State | **READY — LOCAL_APPLICATION_RUNNING_AND_POPULATED** |
 
 ---
 
@@ -26,6 +26,7 @@
 | `BE-TASK-08` | `BE-M8` | Audit IDOR, deteksi kueri n+1, stress test absensi massal, backend hardening | **COMPLETED** | `BE-TASK-07` | `rev-1.1.0` (FROZEN) | `backend/**` |
 | `BE-TASK-09` | `BE-M9` | Independent verification, security hardening, query optimization, performance testing | **COMPLETED** | `BE-TASK-08` | `rev-1.1.0` (FROZEN) | `backend/**`, `coordination/BACKEND_STATUS.md` |
 | `BE-TASK-10` | `BE-M9.1` | Infrastructure verification, concurrency hardening, contract semantic verification, disaster recovery, real HTTP smoke test | **COMPLETED** | `BE-TASK-09` | `rev-1.1.0` (FROZEN) | `backend/**`, `coordination/BACKEND_STATUS.md` |
+| `BE-TASK-11` | `LOCAL-M1` | Reusable Faker seeder command, 12 progress steps, physical PDF generation, seeder tests, operational readiness | **COMPLETED** | `BE-TASK-10` | `rev-1.1.0` (FROZEN) | `backend/**`, `coordination/BACKEND_STATUS.md` |
 
 ---
 
