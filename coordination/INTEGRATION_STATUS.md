@@ -8,10 +8,10 @@
 | Cakupan Writable | `integration/**`, `contracts/**`, `coordination/INTEGRATION_STATUS.md`, `coordination/PROJECT_STATUS.md` |
 | Terakhir Diperbarui | 14 November 2026 |
 | Status Baseline Kontrak | **APPROVED BASELINE v1.1.0** (OpenAPI: 49 ops, 71 schemas; DBML: 18 tables) |
-| SHA-256 OpenAPI | `D3871BA834C17FC6DC49BB92F63391EB3EC63571E784A6623CE8E2A65CB52B9E` |
+| SHA-256 OpenAPI | `F1618EB80154D970F639A5617AD645D3A37D139A9CC6B90AFA8E4E054A10B72B` |
 | SHA-256 Basis Data | `DA7B35DBBFC0DF1080DD40A93E4DB01D97CEB568EDF31EE3A97E1CAF723603B8` |
-| Status Kesiapan Akhir | **READY — FULL_SYSTEM_INTEGRATION_VERIFIED** |
-| Hasil Pengujian Sistem | Backend: 99 Pytest PASS (PostgreSQL & SQLite); Frontend: 71 Vitest PASS; E2E: 6 Playwright PASS |
+| Status Kesiapan Akhir | **READY — RELEASE_CANDIDATE_VERIFIED_FOR_RESEARCH_DEMONSTRATION** |
+| Hasil Pengujian Sistem | Backend: 111 Pytest (110 PASS, 1 SKIPPED); Frontend: 74 Vitest PASS; E2E: 6 Playwright PASS; Multi-Worker: 9/9 PASS; N2N: 20/20 PASS |
 
 ---
 
