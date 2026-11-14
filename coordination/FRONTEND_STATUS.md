@@ -7,7 +7,7 @@
 | Penanggung Jawab | **Frontend Agent** |
 | Cakupan Writable | `frontend/**`, `coordination/FRONTEND_STATUS.md` |
 | Terakhir Diperbarui | 14 November 2026 |
-| Status Akhir | **`READY — FRONTEND_VERIFIED_UX_REFINED_AND_READY_FOR_INTEGRATION`** |
+| Status Akhir | **`READY — LOCAL_APPLICATION_RUNNING_AND_POPULATED`** |
 | Acuan Kontrak | `contracts/openapi.v1.yaml` (v1.1.0, SHA-256: `D3871BA8...`) |
 | Acuan Basis Data | `contracts/database.dbml` (v1.1.0, SHA-256: `DA7B35DB...`) |
 | Acuan Desain | `design/tokens.json`, `design/evidence/` (32 PNG), `design/master-canvas.pen` |
@@ -28,6 +28,8 @@
 | `FE-TASK-08` | `FE-M8` | Audit aksesibilitas WCAG 2.1 AA (axe-core), 13 test suites, security test | **COMPLETED** | `FE-TASK-07` | `v1.1.0` (APPROVED) | S01-S18 (All) | `frontend/tests/**` |
 | `FE-TASK-09` | `FE-M9` | UI/UX Improvement, contrast ratio >4.5:1, table density, chunk optimization | **COMPLETED** | `FE-TASK-08` | `v1.1.0` (APPROVED) | S01-S18 (All) | `frontend/src/**` |
 | `FE-TASK-10` | `FE-M10`| Final regression, typecheck clean, production build, master deliverables | **COMPLETED** | `FE-TASK-09` | `v1.1.0` (APPROVED) | Seluruh Frontend | `frontend/**` |
+| `FE-TASK-11` | `FE-M10.1`| Browser testing, contract alignment, role switching, WCAG closure | **COMPLETED** | `FE-TASK-10` | `v1.1.0` (APPROVED) | Seluruh Frontend | `frontend/**` |
+| `FE-TASK-12` | `LOCAL-M1`| Playwright 7 E2E role tests, multi-role union verification, live seeded UI testing | **COMPLETED** | `FE-TASK-11` | `v1.1.0` (APPROVED) | Seluruh Frontend | `frontend/**` |
 | `FE-TASK-11` | `FE-M10.1`| Independent Verification, Contract Alignment, Browser Testing & UI Closure | **COMPLETED** | `FE-TASK-10` | `v1.1.0` (APPROVED) | Seluruh Frontend | `frontend/**`, `coordination/FRONTEND_STATUS.md` |
 
 ---
