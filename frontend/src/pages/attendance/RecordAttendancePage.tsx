@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Save, CheckCheck } from "lucide-react";
+import { Save, CheckCheck, AlertCircle } from "lucide-react";
 
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
@@ -26,6 +26,7 @@ interface RosterResponse {
   class_name: string;
   date: string;
   students: StudentRosterItem[];
+  roster_version?: number;
 }
 
 export const RecordAttendancePage: React.FC = () => {
@@ -41,6 +42,7 @@ export const RecordAttendancePage: React.FC = () => {
   >({});
   const [isDirty, setIsDirty] = React.useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = React.useState(false);
+  const [conflictError, setConflictError] = React.useState<string | null>(null);
 
   // Available classes: from user.assigned_classes or query
   const assignedClasses = user?.assigned_classes || [];
@@ -110,6 +112,7 @@ export const RecordAttendancePage: React.FC = () => {
         class_id: Number(selectedClassId),
         date: selectedDate,
         items,
+        expected_roster_version: rosterData?.roster_version ?? 0,
       });
       return res.data;
     },
@@ -120,12 +123,31 @@ export const RecordAttendancePage: React.FC = () => {
       toast.success("Kehadiran kelas berhasil disimpan secara atomik");
       setIsDirty(false);
       setShowConfirmDialog(false);
+      setConflictError(null);
     },
     onError: (err: unknown) => {
-      const errObj = err as { normalized?: { message: string } };
-      toast.error(
-        errObj?.normalized?.message || "Gagal menyimpan absensi kelas",
-      );
+      const errObj = err as {
+        normalized?: { message: string; code?: string };
+        response?: { status?: number; data?: { code?: string; message?: string } };
+      };
+      const isConflict =
+        errObj?.response?.status === 409 ||
+        errObj?.normalized?.code === "CONCURRENCY_CONFLICT" ||
+        errObj?.response?.data?.code === "CONCURRENCY_CONFLICT";
+
+      if (isConflict) {
+        setConflictError(
+          errObj?.normalized?.message ||
+            errObj?.response?.data?.message ||
+            "Data presensi telah diperbarui pengguna lain. Tinjau perubahan sebelum menyimpan.",
+        );
+        setShowConfirmDialog(false);
+        toast.error("Konflik Konkurensi: Data telah diperbarui oleh pengguna lain.");
+      } else {
+        toast.error(
+          errObj?.normalized?.message || "Gagal menyimpan absensi kelas",
+        );
+      }
     },
   });
 
@@ -251,6 +273,34 @@ export const RecordAttendancePage: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {/* Concurrency Conflict Recovery Banner */}
+      {conflictError && (
+        <div className="rounded-card border border-semantic-warning-border bg-semantic-warning-bg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm text-semantic-warning-fg">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-semantic-warning-fg shrink-0" />
+            <div>
+              <p className="font-bold">Konflik Konkurensi Terdeteksi</p>
+              <p className="text-xs opacity-90">{conflictError}</p>
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              queryClient.invalidateQueries({ queryKey: ["attendance-roster"] });
+              setConflictError(null);
+              toast.info(
+                "Roster terbaru telah dimuat. Silakan tinjau kembali perubahan sebelum menyimpan.",
+              );
+            }}
+            className="shrink-0"
+          >
+            Muat Ulang Roster
+          </Button>
+        </div>
+      )}
 
       {/* Live Metrics Summary Bar */}
       {totalStudents > 0 && (
