@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { Plus, UserCheck, GraduationCap } from "lucide-react";
+import { Plus, UserCheck, GraduationCap, X, CalendarOff } from "lucide-react";
 
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
@@ -41,6 +41,11 @@ export const AssignmentsPage: React.FC = () => {
 
   const [isEnrollModalOpen, setIsEnrollModalOpen] = React.useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = React.useState(false);
+  const [endingEnrollment, setEndingEnrollment] =
+    React.useState<EnrollmentItem | null>(null);
+  const [endingAssignment, setEndingAssignment] =
+    React.useState<AssignmentItem | null>(null);
+  const [endDateValue, setEndDateValue] = React.useState("");
 
   // Fetch classes for dropdowns
   const { data: classesData } = useQuery<{
@@ -103,6 +108,60 @@ export const AssignmentsPage: React.FC = () => {
     },
   });
 
+  // Update Enrollment Mutation (operationId: updateEnrollment)
+  const updateEnrollMutation = useMutation({
+    mutationFn: async ({
+      id,
+      end_date,
+    }: {
+      id: number;
+      end_date: string | null;
+    }) => {
+      const res = await apiClient.patch(`/master/enrollments/${id}`, {
+        end_date,
+      });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["master-enrollments"] });
+      toast.success("Penempatan siswa berhasil diperbarui");
+      setEndingEnrollment(null);
+    },
+    onError: (err: unknown) => {
+      const errObj = err as { normalized?: { message: string } };
+      toast.error(
+        errObj?.normalized?.message || "Gagal memperbarui penempatan siswa",
+      );
+    },
+  });
+
+  // Update Class Assignment Mutation (operationId: updateClassAssignment)
+  const updateAssignMutation = useMutation({
+    mutationFn: async ({
+      id,
+      end_date,
+    }: {
+      id: number;
+      end_date: string | null;
+    }) => {
+      const res = await apiClient.patch(`/master/assignments/${id}`, {
+        end_date,
+      });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["master-assignments"] });
+      toast.success("Penugasan guru berhasil diperbarui");
+      setEndingAssignment(null);
+    },
+    onError: (err: unknown) => {
+      const errObj = err as { normalized?: { message: string } };
+      toast.error(
+        errObj?.normalized?.message || "Gagal memperbarui penugasan guru",
+      );
+    },
+  });
+
   const {
     register: regEnroll,
     handleSubmit: submitEnroll,
@@ -157,6 +216,27 @@ export const AssignmentsPage: React.FC = () => {
           </span>
         ),
     },
+    {
+      header: "Aksi",
+      className: "text-right",
+      headerClassName: "text-right",
+      cell: (i) => (
+        <div className="flex justify-end">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setEndDateValue(
+                i.end_date || new Date().toISOString().slice(0, 10),
+              );
+              setEndingEnrollment(i);
+            }}
+          >
+            {i.end_date ? "Ubah Selesai" : "Akhiri Penempatan"}
+          </Button>
+        </div>
+      ),
+    },
   ];
 
   const assignColumns: ColumnDef<AssignmentItem>[] = [
@@ -188,6 +268,27 @@ export const AssignmentsPage: React.FC = () => {
       ),
     },
     { header: "Mulai Penugasan", accessorKey: "start_date" },
+    {
+      header: "Aksi",
+      className: "text-right",
+      headerClassName: "text-right",
+      cell: (i) => (
+        <div className="flex justify-end">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setEndDateValue(
+                i.end_date || new Date().toISOString().slice(0, 10),
+              );
+              setEndingAssignment(i);
+            }}
+          >
+            {i.end_date ? "Ubah Selesai" : "Akhiri Penugasan"}
+          </Button>
+        </div>
+      ),
+    },
   ];
 
   return (
@@ -442,6 +543,201 @@ export const AssignmentsPage: React.FC = () => {
                 </Button>
               </div>
             </form>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
+
+      {/* Modal: Update Enrollment End Date (updateEnrollment) */}
+      <DialogPrimitive.Root
+        open={endingEnrollment !== null}
+        onOpenChange={(open) => !open && setEndingEnrollment(null)}
+      >
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />
+          <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-50 w-full max-w-md translate-x-[-50%] translate-y-[-50%] rounded-panel border border-border bg-surface p-6 shadow-lg">
+            <div className="flex items-center justify-between pb-2 border-b border-border">
+              <div className="flex items-center gap-2">
+                <CalendarOff className="h-5 w-5 text-brand-primary" />
+                <DialogPrimitive.Title className="text-lg font-semibold text-text-foreground">
+                  Perbarui Akhir Penempatan Rombel
+                </DialogPrimitive.Title>
+              </div>
+              <DialogPrimitive.Close asChild>
+                <button
+                  type="button"
+                  className="p-1 rounded-sm text-text-muted hover:text-text-foreground"
+                  aria-label="Tutup"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </DialogPrimitive.Close>
+            </div>
+
+            {endingEnrollment && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  updateEnrollMutation.mutate({
+                    id: endingEnrollment.id,
+                    end_date: endDateValue || null,
+                  });
+                }}
+                className="space-y-4 pt-4"
+              >
+                <div className="bg-surface-subtle p-3 rounded-input border border-border text-xs space-y-1">
+                  <div>
+                    <span className="text-text-muted">Siswa: </span>
+                    <span className="font-semibold">
+                      {endingEnrollment.student_name ||
+                        `ID #${endingEnrollment.student_id}`}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-text-muted">Kelas: </span>
+                    <span className="font-semibold">
+                      {endingEnrollment.class_name ||
+                        `ID #${endingEnrollment.class_id}`}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-text-muted">Tanggal Mulai: </span>
+                    <span className="font-semibold">
+                      {endingEnrollment.start_date}
+                    </span>
+                  </div>
+                </div>
+
+                <FormField
+                  id="enroll_end_date"
+                  label="Tanggal Selesai Penempatan"
+                  helperText="Kosongkan jika penempatan tetap aktif di rombel ini."
+                >
+                  <Input
+                    id="enroll_end_date"
+                    type="date"
+                    value={endDateValue}
+                    onChange={(e) => setEndDateValue(e.target.value)}
+                  />
+                </FormField>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-border">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setEndingEnrollment(null)}
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    isLoading={updateEnrollMutation.isPending}
+                  >
+                    Simpan Perubahan
+                  </Button>
+                </div>
+              </form>
+            )}
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
+
+      {/* Modal: Update Class Assignment End Date (updateClassAssignment) */}
+      <DialogPrimitive.Root
+        open={endingAssignment !== null}
+        onOpenChange={(open) => !open && setEndingAssignment(null)}
+      >
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />
+          <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-50 w-full max-w-md translate-x-[-50%] translate-y-[-50%] rounded-panel border border-border bg-surface p-6 shadow-lg">
+            <div className="flex items-center justify-between pb-2 border-b border-border">
+              <div className="flex items-center gap-2">
+                <CalendarOff className="h-5 w-5 text-brand-primary" />
+                <DialogPrimitive.Title className="text-lg font-semibold text-text-foreground">
+                  Perbarui Akhir Penugasan Guru
+                </DialogPrimitive.Title>
+              </div>
+              <DialogPrimitive.Close asChild>
+                <button
+                  type="button"
+                  className="p-1 rounded-sm text-text-muted hover:text-text-foreground"
+                  aria-label="Tutup"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </DialogPrimitive.Close>
+            </div>
+
+            {endingAssignment && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  updateAssignMutation.mutate({
+                    id: endingAssignment.id,
+                    end_date: endDateValue || null,
+                  });
+                }}
+                className="space-y-4 pt-4"
+              >
+                <div className="bg-surface-subtle p-3 rounded-input border border-border text-xs space-y-1">
+                  <div>
+                    <span className="text-text-muted">Guru: </span>
+                    <span className="font-semibold">
+                      {endingAssignment.employee_name ||
+                        `ID #${endingAssignment.employee_id}`}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-text-muted">Kelas & Peran: </span>
+                    <span className="font-semibold">
+                      {endingAssignment.class_name ||
+                        `ID #${endingAssignment.class_id}`}{" "}
+                      (
+                      {endingAssignment.role === "WALI_KELAS"
+                        ? "Wali Kelas"
+                        : "Guru Mapel"}
+                      )
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-text-muted">Tanggal Mulai: </span>
+                    <span className="font-semibold">
+                      {endingAssignment.start_date}
+                    </span>
+                  </div>
+                </div>
+
+                <FormField
+                  id="assign_end_date"
+                  label="Tanggal Selesai Penugasan"
+                  helperText="Kosongkan jika penugasan tetap aktif pada kelas ini."
+                >
+                  <Input
+                    id="assign_end_date"
+                    type="date"
+                    value={endDateValue}
+                    onChange={(e) => setEndDateValue(e.target.value)}
+                  />
+                </FormField>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-border">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setEndingAssignment(null)}
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    isLoading={updateAssignMutation.isPending}
+                  >
+                    Simpan Perubahan
+                  </Button>
+                </div>
+              </form>
+            )}
           </DialogPrimitive.Content>
         </DialogPrimitive.Portal>
       </DialogPrimitive.Root>
