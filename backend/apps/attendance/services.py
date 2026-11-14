@@ -2,14 +2,14 @@ from datetime import date
 from typing import Optional
 
 from django.core.cache import cache
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Q
 from simple_history.utils import bulk_create_with_history, bulk_update_with_history
 
 from apps.accounts.models import ActivityLog, User
 from apps.attendance.models import Attendance, AttendanceStatusEnum
 from apps.attendance.schemas import AttendanceBulkRequest, AttendanceBulkResponse
-from apps.core.exceptions import BusinessValidationError, NotFoundError, PermissionDeniedError
+from apps.core.exceptions import BusinessValidationError, ConcurrencyConflictError, NotFoundError, PermissionDeniedError
 from apps.core.security import require_roles
 from apps.master_data.models import ClassAssignment, Enrollment, SchoolClass
 from apps.reports.services import invalidate_dashboard_cache
@@ -27,6 +27,14 @@ def save_bulk_attendance(
     school_class = SchoolClass.objects.filter(id=payload.class_id).first()
     if not school_class:
         raise NotFoundError("Kelas tidak ditemukan.")
+
+    # 2b. Optimistic locking check for roster revision (CCR-20261114-01)
+    current_roster_ver = Attendance.history.filter(school_class=school_class, date=payload.date).count()
+    if payload.expected_roster_version is not None and payload.expected_roster_version != current_roster_ver:
+        raise ConcurrencyConflictError(
+            message="Data presensi kelas ini telah diperbarui oleh pengguna lain. Silakan muat ulang roster sebelum menyimpan.",
+            details=[{"current_roster_version": current_roster_ver, "expected_roster_version": payload.expected_roster_version}],
+        )
 
     # 3. Authorization validation: strictly assigned teacher/homeroom
     require_roles(actor, ["Guru", "Wali Kelas"])
@@ -109,11 +117,17 @@ def save_bulk_attendance(
             new_rec._change_reason = f"Bulk create presensi oleh {actor.username}"
             to_create.append(new_rec)
 
-    if to_create:
-        bulk_create_with_history(to_create, Attendance, default_user=actor)
+    try:
+        if to_create:
+            bulk_create_with_history(to_create, Attendance, default_user=actor)
 
-    if to_update:
-        bulk_update_with_history(to_update, Attendance, ["status", "note", "recorded_by"], default_user=actor)
+        if to_update:
+            bulk_update_with_history(to_update, Attendance, ["status", "note", "recorded_by"], default_user=actor)
+    except IntegrityError:
+        raise ConcurrencyConflictError(
+            message="Terjadi benturan data presensi secara serentak oleh pengguna lain. Silakan muat ulang roster sebelum menyimpan.",
+            details=[{"conflict": "Unique constraint violation on concurrent submission"}],
+        )
 
     # Invalidate cache after commit
     def invalidate_cache():
