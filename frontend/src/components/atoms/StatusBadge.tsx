@@ -62,13 +62,15 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     case "IZIN":
     case "MENUNGGU_PERSETUJUAN":
     case "MUTASI":
+    case "MUTASI_KELUAR":
       colorClasses =
         "bg-semantic-warning-bg text-semantic-warning-fg border-semantic-warning-border";
       if (!label) {
         if (normalized === "IZIN") displayLabel = "Izin";
         if (normalized === "MENUNGGU_PERSETUJUAN")
           displayLabel = "Menunggu Persetujuan";
-        if (normalized === "MUTASI") displayLabel = "Mutasi";
+        if (normalized === "MUTASI" || normalized === "MUTASI_KELUAR")
+          displayLabel = "Mutasi Keluar";
       }
       break;
 
