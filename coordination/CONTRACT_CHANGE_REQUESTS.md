@@ -30,6 +30,8 @@ Setiap perubahan terhadap `contracts/openapi.v1.yaml` atau `contracts/database.d
 | `CCR-20261112-01` | 12 Nov 2026 | Coordinator | OpenAPI & DBML | Inisialisasi kontrak baseline v1.0.0 untuk seluruh modul | **APPROVED** | 12 Nov 2026 |
 | `CCR-20261112-02` | 12 Nov 2026 | Coordinator | OpenAPI v1.0.0 | Penambahan endpoint kelengkapan S01-S18 (`/accounts/users`, `/master/employees`, dll.) dan 13 skema baru | **APPROVED** | 12 Nov 2026 |
 | `CCR-20261112-03` | 12 Nov 2026 | Coordinator | contracts/README | Penerapan siklus kesiapan modular (Modular Readiness Gates) per modul dan per agen | **APPROVED** | 12 Nov 2026 |
+| `CCR-20261112-04` | 12 Nov 2026 | Coordinator | OpenAPI & DBML | Shared Contract Finalization, 6 PATCH endpoints, 49 ops, HTTP 409 | **APPROVED** | 12 Nov 2026 |
+| `CCR-20261114-01` | 14 Nov 2026 | Coordinator | OpenAPI v1.1.0 | Roster Optimistic Concurrency Precondition (`expected_roster_version` / HTTP 409) | **APPROVED** | 14 Nov 2026 |
 
 ---
 
@@ -89,4 +91,17 @@ ole, is_active pada users, serta user_id, start_date, end_date pada audit-logs.
   - Backend: Django Ninja mengimplementasikan router PATCH dan filter parameter opsional.
   - Frontend: openapi-typescript menggenerasi antarmuka TypeScript v1.1.0 dengan 49 operasi.
   - Desain: Seluruh frame antarmuka Pencil MCP pada master-canvas.pen tetap valid dan kini didukung penuh oleh kontrak server.
-- **Status:** APPROVED & IMPLEMENTED.\n
+- **Status:** APPROVED & IMPLEMENTED.
+
+---
+
+### Detail CCR-20261114-01 (Attendance Roster Optimistic Concurrency Resolution)
+- **Komponen:** `contracts/openapi.v1.yaml` (`AttendanceRosterResponse`, `AttendanceBulkRequest`, `POST /attendance/bulk`).
+- **Alasan Kebutuhan:** Menutup kesenjangan P0 konkurensi presensi massal di mana `POST /attendance/bulk` telah memiliki respon HTTP 409 Conflict namun request payload belum memuat field precondition revision untuk mendeteksi submit dari data roster yang sudah kedaluwarsa (*stale roster edits*).
+- **Perubahan Rinci:**
+  1. Pada `AttendanceRosterResponse`, disediakan field `roster_version` (integer bertahap yang mencerminkan timestamp atau jumlah mutasi pada rombel/tanggal terkait).
+  2. Pada `AttendanceBulkRequest`, disediakan field opsional `expected_roster_version` (integer).
+  3. Logika Backend: Server memvalidasi bahwa `expected_roster_version` cocok dengan status saat ini. Jika data telah diubah oleh guru lain atau wali kelas setelah roster dimuat, kembalikan respon HTTP 409 Conflict (`CONCURRENCY_CONFLICT`).
+  4. Backward Compatibility: Field bersifat opsional sehingga input awal atau klien tanpa versi tetap didukung tanpa breaking change.
+- **Status:** APPROVED & IMPLEMENTED.
+\n
