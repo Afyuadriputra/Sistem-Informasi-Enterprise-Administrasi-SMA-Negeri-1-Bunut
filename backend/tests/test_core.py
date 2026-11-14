@@ -9,6 +9,8 @@ from apps.core.schemas import ErrorEnvelope
 @pytest.mark.django_db
 def test_sqlite_connection_and_wal():
     """Verify SQLite connection, foreign keys, and WAL journal mode."""
+    if connection.vendor != "sqlite":
+        pytest.skip("Test specifically verifies SQLite PRAGMA pragmas on SQLite connections.")
     with connection.cursor() as cursor:
         cursor.execute("PRAGMA foreign_keys;")
         fk_status = cursor.fetchone()[0]
@@ -18,6 +20,17 @@ def test_sqlite_connection_and_wal():
     assert fk_status == 1
     # SQLite in-memory during tests returns 'memory', file-based returns 'wal'
     assert journal_mode.lower() in ("wal", "memory")
+
+
+@pytest.mark.django_db
+def test_postgresql_connection_and_version():
+    """Verify PostgreSQL connection and engine when running against PostgreSQL."""
+    if connection.vendor != "postgresql":
+        pytest.skip("Test specifically verifies PostgreSQL engine.")
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT version();")
+        version = cursor.fetchone()[0]
+    assert "PostgreSQL" in version
 
 
 def test_sqlite_isolated_file_based_wal_and_fk_pragmas(tmp_path):
