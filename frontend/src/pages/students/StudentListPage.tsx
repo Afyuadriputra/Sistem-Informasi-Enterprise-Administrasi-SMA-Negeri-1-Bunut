@@ -47,7 +47,7 @@ const studentSchema = z.object({
   student_number: z.string().min(3, "Nomor induk siswa wajib diisi"),
   name: z.string().min(2, "Nama siswa wajib diisi"),
   gender: z.enum(["L", "P"]),
-  status: z.enum(["AKTIF", "LULUS", "MUTASI", "KELUAR", "DO"]),
+  status: z.enum(["AKTIF", "MUTASI_KELUAR", "LULUS", "NONAKTIF"]),
 });
 
 type StudentFormData = z.infer<typeof studentSchema>;
@@ -178,7 +178,8 @@ export const StudentListPage: React.FC = () => {
     resetEdit({
       name: student.name,
       gender: student.gender as "L" | "P",
-      status: student.status as "AKTIF",
+      status: student.status as
+        "AKTIF" | "MUTASI_KELUAR" | "LULUS" | "NONAKTIF",
     });
   };
 
@@ -270,10 +271,9 @@ export const StudentListPage: React.FC = () => {
           >
             <option value="">Semua Status</option>
             <option value="AKTIF">Aktif</option>
+            <option value="MUTASI_KELUAR">Mutasi Keluar</option>
             <option value="LULUS">Lulus</option>
-            <option value="MUTASI">Mutasi</option>
-            <option value="KELUAR">Keluar</option>
-            <option value="DO">Drop Out</option>
+            <option value="NONAKTIF">Nonaktif</option>
           </select>
         </div>
 
@@ -485,8 +485,9 @@ export const StudentListPage: React.FC = () => {
                     {...register("status")}
                   >
                     <option value="AKTIF">Aktif</option>
-                    <option value="MUTASI">Mutasi</option>
+                    <option value="MUTASI_KELUAR">Mutasi Keluar</option>
                     <option value="LULUS">Lulus</option>
+                    <option value="NONAKTIF">Nonaktif</option>
                   </select>
                 </FormField>
               </div>
@@ -571,10 +572,9 @@ export const StudentListPage: React.FC = () => {
                     {...registerEdit("status")}
                   >
                     <option value="AKTIF">Aktif</option>
+                    <option value="MUTASI_KELUAR">Mutasi Keluar</option>
                     <option value="LULUS">Lulus</option>
-                    <option value="MUTASI">Mutasi</option>
-                    <option value="KELUAR">Keluar</option>
-                    <option value="DO">Drop Out</option>
+                    <option value="NONAKTIF">Nonaktif</option>
                   </select>
                 </FormField>
               </div>
