@@ -68,11 +68,14 @@ def get_attendance_roster(class_id: int, target_date: date, actor: User) -> Atte
             )
         )
 
+    roster_ver = Attendance.history.filter(school_class=school_class, date=target_date).count()
+
     return AttendanceRosterResponse(
         class_id=school_class.id,
         class_name=school_class.name,
         date=target_date,
         students=students,
+        roster_version=roster_ver,
     )
 
 
