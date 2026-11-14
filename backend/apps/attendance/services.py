@@ -1,4 +1,6 @@
 from datetime import date
+from functools import wraps
+import threading
 from typing import Optional
 
 from django.core.cache import cache
@@ -14,7 +16,18 @@ from apps.core.security import require_roles
 from apps.master_data.models import ClassAssignment, Enrollment, SchoolClass
 from apps.reports.services import invalidate_dashboard_cache
 
+_attendance_lock = threading.Lock()
 
+
+def with_attendance_lock(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        with _attendance_lock:
+            return func(*args, **kwargs)
+    return wrapper
+
+
+@with_attendance_lock
 @transaction.atomic
 def save_bulk_attendance(
     payload: AttendanceBulkRequest, actor: User, request_id: Optional[str] = None
@@ -27,14 +40,6 @@ def save_bulk_attendance(
     school_class = SchoolClass.objects.filter(id=payload.class_id).first()
     if not school_class:
         raise NotFoundError("Kelas tidak ditemukan.")
-
-    # 2b. Optimistic locking check for roster revision (CCR-20261114-01)
-    current_roster_ver = Attendance.history.filter(school_class=school_class, date=payload.date).count()
-    if payload.expected_roster_version is not None and payload.expected_roster_version != current_roster_ver:
-        raise ConcurrencyConflictError(
-            message="Data presensi kelas ini telah diperbarui oleh pengguna lain. Silakan muat ulang roster sebelum menyimpan.",
-            details=[{"current_roster_version": current_roster_ver, "expected_roster_version": payload.expected_roster_version}],
-        )
 
     # 3. Authorization validation: strictly assigned teacher/homeroom
     require_roles(actor, ["Guru", "Wali Kelas"])
@@ -53,6 +58,14 @@ def save_bulk_attendance(
 
     if not has_assignment:
         raise PermissionDeniedError("Anda tidak memiliki penugasan aktif di kelas ini pada tanggal tersebut.")
+
+    # 4. Mandatory Optimistic locking check for roster revision (CCR-20261114-01)
+    current_roster_ver = Attendance.history.filter(school_class=school_class, date=payload.date).count()
+    if payload.expected_roster_version != current_roster_ver:
+        raise ConcurrencyConflictError(
+            message="Data presensi kelas ini telah diperbarui oleh pengguna lain. Silakan muat ulang roster sebelum menyimpan.",
+            details=[{"current_roster_version": current_roster_ver, "expected_roster_version": payload.expected_roster_version}],
+        )
 
     # 4. Duplicate students check in payload
     student_ids = [item.student_id for item in payload.items]
