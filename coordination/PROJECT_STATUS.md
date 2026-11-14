@@ -4,12 +4,12 @@
 
 | Metadata | Nilai |
 |---|---|
-| Tahap Proyek Saat Ini | **INT-M8 - FULL SYSTEM INTEGRATION VERIFIED** |
-| Status Keseluruhan | **READY — FULL_SYSTEM_INTEGRATION_VERIFIED** |
+| Tahap Proyek Saat Ini | **INT-M8.1 - RELEASE CANDIDATE VERIFIED FOR RESEARCH DEMONSTRATION** |
+| Status Keseluruhan | **READY — RELEASE_CANDIDATE_VERIFIED_FOR_RESEARCH_DEMONSTRATION** |
 | Terakhir Diperbarui | 14 November 2026 |
 | Pengelola | Coordinator / Integration Agent |
 | Status Kontrak Bersama | **APPROVED BASELINE v1.1.0** (OpenAPI: 49 ops, 71 schemas; DBML: 18 tables) |
-| SHA-256 OpenAPI | `D3871BA834C17FC6DC49BB92F63391EB3EC63571E784A6623CE8E2A65CB52B9E` |
+| SHA-256 OpenAPI | `F1618EB80154D970F639A5617AD645D3A37D139A9CC6B90AFA8E4E054A10B72B` |
 | SHA-256 Basis Data | `DA7B35DBBFC0DF1080DD40A93E4DB01D97CEB568EDF31EE3A97E1CAF723603B8` |
 | Status UI/UX Design | **COMPLETED & FROZEN** (UX-M1 s/d UX-M9.3, 32 visual frames, master canvas 864 KB) |
 
@@ -21,9 +21,9 @@
 |---|---|---|---|---|
 | **Kontrak & Koordinasi** | **APPROVED / FINALIZED** | `v1.1.0` | Coordinator Agent | OpenAPI v1.1.0 (49 ops), DBML v1.0.0 (18 tables), RBAC v1.1.0 selaras 100% |
 | **UI/UX Design Track** | **COMPLETED & FROZEN** | `UX-M9.3: Handoff Freeze` | UI/UX Design Agent | Kanvas master terpadu 864 KB, 32 evidensi visual PNG, dua master docs |
-| **Jalur Backend** | **READY / COMPLETED** | `BE-M9.1: Closure` | Backend Agent | 99 automated tests PASS (PostgreSQL & SQLite), 84% coverage, Ruff clean |
-| **Jalur Frontend** | **READY / COMPLETED** | `FE-M10.1: Closure` | Frontend Agent | 71 Vitest PASS, 6 Playwright E2E PASS, typecheck & build clean |
-| **Jalur Integrasi** | **READY / VERIFIED** | `INT-M8: Full System E2E` | Integration Agent | Seluruh gerbang INT-M1 s/d INT-M8 lulus 100%; 20 N2N checks PASS |
+| **Jalur Backend** | **READY / COMPLETED** | `BE-M9.2: Env & Secret Closure` | Backend Agent | 110 automated tests PASS (1 skipped dual-engine), 84% coverage, fail-fast env validation |
+| **Jalur Frontend** | **READY / COMPLETED** | `FE-M10.2: Env Hardening Closure` | Frontend Agent | 74 Vitest PASS, 6 Playwright E2E PASS, zero client secret leak, typecheck & build clean |
+| **Jalur Integrasi** | **READY / VERIFIED** | `INT-M8.1 Addendum: Environment Closure` | Integration Agent | 111 Pytest (110 PASS, 1 skip), 74 Vitest PASS, 6 Playwright PASS, 8 Gates + 20 N2N PASS, Centralized Env Verified |
 
 ---
 
