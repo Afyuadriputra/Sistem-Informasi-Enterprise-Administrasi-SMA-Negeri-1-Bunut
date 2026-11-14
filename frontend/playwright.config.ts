@@ -10,7 +10,7 @@ export default defineConfig({
   timeout: 30000,
   reporter: "list",
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000",
     trace: "off",
     screenshot: "on",
     video: "off",
