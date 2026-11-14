@@ -107,28 +107,26 @@ def generate_attendance_excel(
         cell.alignment = Alignment(horizontal="center", vertical="center")
         cell.border = thin_border
 
-    # Data rows with formula injection sanitization
-    row_num = 1
-    for att in qs:
+    # Data rows with formula injection sanitization (optimized via values_list and direct row appending)
+    raw_data = qs.values_list(
+        "date",
+        "school_class__name",
+        "student__student_number",
+        "student__name",
+        "status",
+        "note",
+    )
+    for row_num, (att_date, cls_name, std_num, std_name, att_status, att_note) in enumerate(raw_data, start=1):
         raw_row = [
             row_num,
-            att.date.strftime("%d/%m/%Y"),
-            att.school_class.name,
-            att.student.student_number,
-            att.student.full_name,
-            att.status,
-            att.note or "-",
+            att_date.strftime("%d/%m/%Y") if att_date else "-",
+            cls_name,
+            std_num,
+            std_name,
+            att_status,
+            att_note or "-",
         ]
         ws.append([sanitize_cell_value(val) for val in raw_row])
-        current_row = ws.max_row
-        for col_idx in range(1, len(headers) + 1):
-            cell = ws.cell(row=current_row, column=col_idx)
-            cell.border = thin_border
-            if col_idx in (1, 2, 3, 6):
-                cell.alignment = Alignment(horizontal="center", vertical="center")
-            else:
-                cell.alignment = Alignment(vertical="center")
-        row_num += 1
 
     # Adjust column widths
     column_widths = [6, 14, 12, 16, 32, 14, 30]
