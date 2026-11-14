@@ -4,8 +4,8 @@
 
 | Metadata | Nilai |
 |---|---|
-| Tahap Proyek Saat Ini | **INT-M8.1 - RELEASE CANDIDATE VERIFIED FOR RESEARCH DEMONSTRATION** |
-| Status Keseluruhan | **READY — RELEASE_CANDIDATE_VERIFIED_FOR_RESEARCH_DEMONSTRATION** |
+| Tahap Proyek Saat Ini | **LOCAL-M1 - APPLICATION RUNNING, REALISTIC DATABASE SEEDING & OPERATIONAL READINESS** |
+| Status Keseluruhan | **READY — LOCAL_APPLICATION_RUNNING_AND_POPULATED** |
 | Terakhir Diperbarui | 14 November 2026 |
 | Pengelola | Coordinator / Integration Agent |
 | Status Kontrak Bersama | **APPROVED BASELINE v1.1.0** (OpenAPI: 49 ops, 71 schemas; DBML: 18 tables) |
@@ -23,7 +23,7 @@
 | **UI/UX Design Track** | **COMPLETED & FROZEN** | `UX-M9.3: Handoff Freeze` | UI/UX Design Agent | Kanvas master terpadu 864 KB, 32 evidensi visual PNG, dua master docs |
 | **Jalur Backend** | **READY / COMPLETED** | `BE-M9.2: Env & Secret Closure` | Backend Agent | 110 automated tests PASS (1 skipped dual-engine), 84% coverage, fail-fast env validation |
 | **Jalur Frontend** | **READY / COMPLETED** | `FE-M10.2: Env Hardening Closure` | Frontend Agent | 74 Vitest PASS, 6 Playwright E2E PASS, zero client secret leak, typecheck & build clean |
-| **Jalur Integrasi** | **READY / VERIFIED** | `INT-M8.1 Addendum: Environment Closure` | Integration Agent | 111 Pytest (110 PASS, 1 skip), 74 Vitest PASS, 6 Playwright PASS, 8 Gates + 20 N2N PASS, Centralized Env Verified |
+| **Jalur Integrasi** | **READY / VERIFIED** | `LOCAL-M1: Running & Seeded Readiness` | Integration Agent | 115 Pytest (114 PASS, 1 skip), 74 Vitest PASS, 7 Playwright PASS, 8 Gates + 20 N2N PASS, Seeder 11.376 Attendance, Ready for Local Evaluation |
 
 ---
 
