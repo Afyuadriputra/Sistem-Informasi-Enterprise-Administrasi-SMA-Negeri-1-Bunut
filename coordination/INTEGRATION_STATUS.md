@@ -10,8 +10,8 @@
 | Status Baseline Kontrak | **APPROVED BASELINE v1.1.0** (OpenAPI: 49 ops, 71 schemas; DBML: 18 tables) |
 | SHA-256 OpenAPI | `F1618EB80154D970F639A5617AD645D3A37D139A9CC6B90AFA8E4E054A10B72B` |
 | SHA-256 Basis Data | `DA7B35DBBFC0DF1080DD40A93E4DB01D97CEB568EDF31EE3A97E1CAF723603B8` |
-| Status Kesiapan Akhir | **READY — LOCAL_APPLICATION_RUNNING_AND_POPULATED** |
-| Hasil Pengujian Sistem | Backend: 115 Pytest (114 PASS, 1 SKIPPED); Frontend: 74 Vitest PASS; E2E: 7 Playwright PASS; INT Gates: 8/8 PASS; N2N: 20/20 PASS |
+| Status Kesiapan Akhir | **READY — LOCAL_STARTUP_VERIFIED_AND_DATA_PRESERVED** |
+| Hasil Pengujian Sistem | Backend: 115 Pytest (114 PASS, 1 SKIPPED); Frontend: 74 Vitest PASS; E2E: 7 Playwright PASS; INT Gates: 8/8 PASS; N2N: 20/20 PASS; Startup Script: Granian Default + Runserver Fallback, Localhost Guard, Bounded Healthcheck, Tree Cleanup |
 
 ---
 

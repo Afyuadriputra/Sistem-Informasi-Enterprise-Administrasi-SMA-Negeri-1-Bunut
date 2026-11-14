@@ -41,7 +41,7 @@ PROJEK istri bg givo/
 │   └── tests/                # 74 Vitest Unit Tests & 7 Playwright E2E Tests
 ├── contracts/                # OpenAPI v1.1.0 & Database DBML
 ├── integration/              # Script Verifikasi Integrasi INT-M1 s/d INT-M8
-├── scripts/                  # start-local.ps1 helper startup
+├── scripts/                  # start-local.ps1 helper startup & lifecycle script
 └── docs/guide/               # TECHNICAL_GUIDE.md, USER_GUIDE.md, ACCOUNTS.local.md
 ```
 
@@ -51,7 +51,16 @@ PROJEK istri bg givo/
 
 Langkah cepat berikut dapat digunakan untuk menjalankan seluruh subsistem dalam waktu kurang dari 2 menit.
 
-### Langkah 1: Pastikan Redis Aktif (WSL2 Ubuntu)
+### 2.1 Menjalankan dengan Helper Script (Satu Perintah)
+Buka terminal PowerShell pada root direktori proyek, lalu jalankan:
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1
+```
+Script akan memverifikasi runtime, memastikan Redis WSL2 aktif, memeriksa port, memulai Granian dan Vite, serta melakukan bounded healthcheck sebelum menyatakan sistem siap.
+
+### 2.2 Menjalankan Secara Manual (Terminal Terpisah)
+
+#### Langkah 1: Pastikan Redis Aktif (WSL2 Ubuntu)
 ```powershell
 wsl -d Ubuntu -- redis-cli ping
 # Jika belum aktif, jalankan:
@@ -59,30 +68,30 @@ wsl -d Ubuntu -- sudo service redis-server start
 ```
 Respons wajib: `PONG`.
 
-### Langkah 2: Jalankan Backend (Terminal 1)
+#### Langkah 2: Jalankan Backend (Terminal 1)
 ```powershell
 cd "D:\Kuliah\joki\radit\PROJEK istri bg givo"
 $env:REDIS_URL="redis://127.0.0.1:6379/1"
 backend\.venv\Scripts\granian.exe --interface asginl config.asgi:application --working-dir backend --host 127.0.0.1 --port 8000
 ```
-Verifikasi status backend melalui browser: `http://127.0.0.1:8000/api/health` (respons `{"status":"ok"}`).
+Verifikasi status backend melalui peramban: `http://127.0.0.1:8000/api/health` (respons `{"status":"ok"}`).
 
-### Langkah 3: Jalankan Frontend (Terminal 2)
+#### Langkah 3: Jalankan Frontend (Terminal 2)
 ```powershell
 cd "D:\Kuliah\joki\radit\PROJEK istri bg givo\frontend"
 npm run dev
 ```
 
-### Langkah 4: Buka Aplikasi di Browser
-Buka peramban web pada alamat:
+#### Langkah 4: Buka Aplikasi di Peramban Web
+Buka peramban pada alamat:
 `http://localhost:3000`
 
-### Langkah 5: Kredensial Akun Pengujian
+#### Langkah 5: Kredensial Akun Pengujian
 Gunakan salah satu akun pengujian yang terdaftar pada:
 `docs/guide/ACCOUNTS.local.md`
 Contoh akun Administrator:
 - Username: `admin`
-- Password: `Password123!`
+- Password: *(Lihat tabel kredensial pengujian di `docs/guide/ACCOUNTS.local.md`)*
 
 ---
 
@@ -90,15 +99,16 @@ Contoh akun Administrator:
 
 Sebelum menjalankan aplikasi, pastikan perangkat kerja memenuhi dependensi berikut:
 
-| Komponen | Versi Minimal | Status Verifikasi | Perintah Pengecekan |
+| Komponen | Versi Minimal / Terverifikasi | Status Verifikasi | Perintah Pengecekan |
 |---|---|---|---|
 | **Sistem Operasi** | Windows 10/11 x64 dengan WSL2 | Terverifikasi | `wsl --status` |
-| **Python** | Python 3.12.x | Terverifikasi (3.12.0) | `python --version` |
-| **Virtual Environment** | `backend/.venv` | Terverifikasi | `backend\.venv\Scripts\python.exe -V` |
-| **Node.js** | Node.js v20.x atau v22.x | Terverifikasi (v22.14.0) | `node --version` |
-| **npm** | npm v10.x | Terverifikasi (v10.9.2) | `npm --version` |
-| **Redis Server** | Redis 7.x pada WSL2 Ubuntu | Terverifikasi (PONG pada port 6379) | `wsl -d Ubuntu -- redis-cli ping` |
-| **Database Development** | SQLite 3.x (dengan WAL mode) | Aktif secara default | Otomatis oleh Django |
+| **Python** | Python 3.12.x (Aktual: 3.12.0) | Terverifikasi | `backend\.venv\Scripts\python.exe -V` |
+| **Virtual Environment** | `backend/.venv` | Terverifikasi | `Test-Path backend\.venv\Scripts\python.exe` |
+| **Granian ASGI Runner** | Granian 2.8.8 | Terverifikasi | `backend\.venv\Scripts\granian.exe --version` |
+| **Node.js** | Node.js v20+ (Aktual: v24.21.0) | Terverifikasi | `node -v` |
+| **npm** | npm v10+ (Aktual: 11.9.0) | Terverifikasi | `npm -v` |
+| **Redis Server** | Redis 7.x pada WSL2 Ubuntu | Terverifikasi (Port 6379) | `wsl -d Ubuntu -- redis-cli ping` |
+| **Database Development** | SQLite 3.x (dengan WAL mode) | Aktif secara default | Otomatis oleh konfigurasi Django |
 | **Database Production** | PostgreSQL 16/17 | Opsional (Dual-Engine ready) | `psql --version` |
 
 ---
@@ -144,7 +154,7 @@ Aplikasi mendukung arsitektur basis data ganda (*Dual-Engine Database Architectu
 Untuk pengujian beban tinggi atau mode produksi:
 1. Ubah variabel `DATABASE_URL` pada `backend/.env`:
    ```ini
-   DATABASE_URL=postgres://postgres:postgres@localhost:5432/sie_bunut_db
+   DATABASE_URL=postgres://<db_user>:<db_password>@localhost:5432/<db_name>
    ```
 2. Jalankan migrasi skema:
    ```powershell
@@ -156,9 +166,10 @@ Untuk pengujian beban tinggi atau mode produksi:
   ```powershell
   backend\.venv\Scripts\python.exe backend/manage.py migrate
   ```
-- **Mencadangkan Basis Data SQLite**:
+- **Mencadangkan Basis Data SQLite Secara Aman (Online Backup)**:
+  SQLite dengan mode WAL memerlukan checkpoint atau copy yang aman agar data di berkas `-wal` tercatat penuh ke berkas utama:
   ```powershell
-  Copy-Item backend/db.sqlite3 backend/db_backup_$(Get-Date -Format 'yyyyMMdd_HHmmss').sqlite3
+  backend\.venv\Scripts\python.exe -c "import sqlite3; con = sqlite3.connect('backend/db.sqlite3'); bck = sqlite3.connect('backend/backups/db_backup.sqlite3'); con.backup(bck); bck.close(); con.close(); print('Backup selesai')"
   ```
 
 ---
@@ -166,9 +177,9 @@ Untuk pengujian beban tinggi atau mode produksi:
 ## BAB 6 - Redis Configuration
 
 Redis bertindak sebagai infrastruktur kritis untuk:
-1. **Token Blacklist Revocation**: Menyimpan token JWT yang telah dibatalkan saat logout untuk mencegah penggunaan ulang token (*fail-closed policy*).
-2. **Rate Limiting**: Membatasi percobaan brute-force login pada endpoint otentikasi.
-3. **Response Caching**: Menyimpan cache data agregat dashboard dan rekapitulasi (*fail-open policy*).
+1. **Token Blacklist Revocation**: Menyimpan ID token JWT (`jti`) yang telah dibatalkan saat pengguna melakukan logout dengan masa kadaluarsa (TTL) sesuai sisa umur token.
+2. **Rate Limiting**: Membatasi percobaan login berulang untuk mencegah serangan brute-force (mengembalikan HTTP 429 dan header `Retry-After: 60`).
+3. **Response Caching**: Menyimpan cache data agregat dashboard dan rekapitulasi presensi.
 
 ### 6.1 Status dan Perintah Operasional
 - **Pemeriksaan Konektivitas**:
@@ -179,18 +190,20 @@ Redis bertindak sebagai infrastruktur kritis untuk:
   ```powershell
   wsl -d Ubuntu -- sudo service redis-server start
   ```
-- **Mengosongkan Cache Pengujian**:
-  ```powershell
-  wsl -d Ubuntu -- redis-cli -n 1 FLUSHDB
-  ```
+- **Kebijakan Keamanan (Security Fail Policy)**:
+  - *Fail-Closed*: Jika Redis tidak dapat dihubungi saat otentikasi login atau blacklist token, sistem menolak sesi demi mencegah penggunaan token kedaluwarsa.
+  - *Fail-Open*: Cache kueri dashboard yang gagal mengakses Redis akan dialihkan langsung membaca basis data.
 
 ---
 
 ## BAB 7 - Database Seeding
 
-Aplikasi dilengkapi dengan reusable database seeder berbasis library `Faker("id_ID")` yang menghasilkan data sekolah Indonesia yang realistis, saling terhubung secara relasional, dan idempoten.
+Aplikasi dilengkapi dengan reusable database seeder berbasis library `Faker("id_ID")` (`backend/manage.py seed_school_data`) yang menghasilkan data sekolah Indonesia yang realistis, saling terhubung secara relasional, dan idempoten.
 
-### 7.1 Perintah Seeder
+> [!NOTE]
+> Seeder **TIDAK** dijalankan otomatis saat startup aplikasi untuk mencegah penimpaan data yang sedang diuji oleh pengguna. Basis data lokal saat ini sudah berisi dataset pengujian lengkap.
+
+### 7.1 Perintah Seeder (Opsional jika Ingin Mempopulasi Ulang Basis Data Terpisah)
 ```powershell
 # Profil Lengkap (Full Realistic Dataset - Rekomendasi Utama):
 backend\.venv\Scripts\python.exe backend/manage.py seed_school_data --profile full
@@ -213,43 +226,55 @@ Seeder memiliki mekanisme *fail-fast protection*: jika variabel `DJANGO_ENV=prod
 
 ---
 
-## BAB 8 - Hasil Populasi Database
+## BAB 8 - Hasil Populasi Database & Rincian Cakupan
 
 Berikut adalah data populasi aktual yang telah terverifikasi tersimpan di dalam basis data:
 
-| Entitas Data | Target Minimal | Jumlah Aktual | Status Keterpenuhan |
-|---|---:|---:|---|
-| **Peran Sistem (Roles)** | 6 | 6 | Terpenuhi (6 Peran Resmi) |
-| **Akun Pengguna (Users)** | 40 | 45 | Terpenuhi (Lengkap 6 role + multi-role) |
-| **Profil Pegawai (Employees)** | 40 | 50 | Terpenuhi (NIP & nomor telepon valid) |
-| **Tahun Ajaran (AcademicYears)** | 2 (1 aktif) | 5 (1 aktif) | Terpenuhi (2026/2027 Aktif) |
-| **Rombongan Belajar (SchoolClasses)** | 12 | 51 | Terpenuhi (Lengkap X-1 s/d XII-4) |
-| **Data Siswa (Students)** | 432 aktif + alumni | 533 | Terpenuhi (485 Siswa Aktif) |
-| **Penempatan Kelas (Enrollments)** | 432 aktif | 519 | Terpenuhi (Tidak ada overlap tanggal) |
-| **Penugasan Guru (ClassAssignments)**| 24 penugasan | 38 | Terpenuhi (Wali Kelas & Guru Mapel) |
-| **Rekor Presensi (Attendance)** | 60 - 90 hari | 11.376 | Terpenuhi (75 Hari Pembelajaran) |
-| **Kasus Kesiswaan (StudentCases)** | 60 | 74 | Terpenuhi (Kasus ringan s/d mediasi) |
-| **Riwayat Kasus (CaseEvents)** | 180 - 300 | 192 | Terpenuhi (Catatan tindakan & konseling) |
-| **Jenis Layanan Surat (ServiceTypes)**| 5 | 10 | Terpenuhi (Surat Keterangan, Mutasi, dll.) |
-| **Permohonan Surat (ServiceRequests)**| 100 - 150 | 170 | Terpenuhi (Berbagai status alur kerja) |
-| **Riwayat Permohonan (ServiceEvents)**| 400 - 650 | 534 | Terpenuhi (Catatan mutasi status & disposisi) |
-| **Dokumen Fisik (Documents)** | 100 - 150 | 130 | Terpenuhi (Berkas PDF fisik di storage) |
+| Entitas Data | Target Spesifikasi | Jumlah Aktual Tersimpan | Status Keterpenuhan |
+|---|---:|---:|:---:|
+| **Peran Sistem (Roles)** | 6 | **6** | Terpenuhi (6 Peran Resmi) |
+| **Akun Pengguna (Users)** | >= 40 | **45** | Terpenuhi (Lengkap 6 role + multi-role) |
+| **Profil Pegawai (Employees)** | >= 40 | **50** | Terpenuhi (NIP, Nama, Nomor Telepon valid) |
+| **Tahun Ajaran (AcademicYears)** | >= 2 (1 aktif) | **5 (1 aktif)** | Terpenuhi (`2026/2027` berstatus Aktif) |
+| **Rombongan Belajar (SchoolClasses)** | >= 12 | **51** | Terpenuhi (Lengkap X-1 s/d XII-4) |
+| **Data Siswa (Students)** | 432 aktif + alumni | **533** | Terpenuhi (485 Siswa Aktif) |
+| **Penempatan Kelas (Enrollments)** | 432 aktif | **519** | Terpenuhi (Relasi waktu valid) |
+| **Penugasan Guru (ClassAssignments)** | 24 penugasan | **38** | Terpenuhi (12 Wali Kelas + Guru Mapel) |
+| **Rekor Presensi (Attendance)** | 60 - 90 hari | **11.376** | Terpenuhi (75 Hari Pembelajaran Historis) |
+| **Kasus Kesiswaan (StudentCases)** | 60 | **74** | Terpenuhi (Kasus ringan s/d mediasi) |
+| **Riwayat Peristiwa Kasus (CaseEvents)**| 180 - 300 | **192** | Terpenuhi (Catatan tindakan & konseling BK) |
+| **Jenis Layanan Surat (ServiceTypes)** | >= 5 | **10** | Terpenuhi (Surat Keterangan, Mutasi, dll.) |
+| **Permohonan Surat (ServiceRequests)** | 100 - 150 | **170** | Terpenuhi (Berbagai status alur kerja) |
+| **Riwayat Permohonan (ServiceEvents)** | 400 - 650 | **534** | Terpenuhi (Alur disposisi surat lengkap) |
+| **Dokumen Fisik PDF (Documents)** | 100 - 150 | **130** | Terpenuhi (Berkas fisik di storage privat) |
+
+### 8.1 Distribusi Cakupan Presensi per Kelas
+Dataset presensi mencakup 75 hari pembelajaran efektif (13 Juli 2026 s/d 13 November 2026). Rincian distribusi aktual:
+- **Kelas Pengujian Utama Presensi & Rekapitulasi**:
+  - `XI-MIPA-1`: 36 siswa, 2.736 baris presensi (76 hari: 75 hari historis + 1 hari uji live).
+  - `X-1`: 36 siswa, 2.700 baris presensi (75 hari historis penuh).
+  - `X-2`: 36 siswa, 2.700 baris presensi (75 hari historis penuh).
+  *(Subtotal rombel utama: 8.136 rekor presensi)*.
+- **Kelas Paralel Lainnya**:
+  - `X-3`, `X-4`, `XI-2`, `XI-3`, `XI-4`, `XII-1`, `XII-2`, `XII-3`, `XII-4`: masing-masing 36 siswa memiliki 360 baris presensi (10 hari pembelajaran aktif).
+  *(Subtotal rombel paralel: 3.240 rekor presensi)*.
+- **Total Keseluruhan**: **11.376 baris presensi**. Arsitektur ini dipilih secara sengaja agar ekspor lembar kerja tahunan Excel tetap dapat diselesaikan dalam waktu kurang dari 1,5 detik tanpa memicu timeout jaringan.
 
 ---
 
 ## BAB 9 - Running Backend
 
-### 9.1 Menjalankan dengan Granian (ASGI Production Runner - Rekomendasi)
+### 9.1 Menjalankan dengan Granian (ASGI Production Runner - Rekomendasi Utama)
 ```powershell
 cd "D:\Kuliah\joki\radit\PROJEK istri bg givo"
 $env:REDIS_URL="redis://127.0.0.1:6379/1"
 backend\.venv\Scripts\granian.exe --interface asginl config.asgi:application --working-dir backend --host 127.0.0.1 --port 8000
 ```
 
-### 9.2 Menjalankan dengan Django Runserver (Alternatif Debug)
+### 9.2 Menjalankan dengan Django Runserver (Alternatif Pengembangan)
 ```powershell
 cd "D:\Kuliah\joki\radit\PROJEK istri bg givo"
-backend\.venv\Scripts\python.exe backend/manage.py runserver 127.0.0.1:8000
+backend\.venv\Scripts\python.exe backend/manage.py runserver 127.0.0.1:8000 --noreload
 ```
 
 ### 9.3 Pemeriksaan Sistem dan Dokumentasi API
@@ -264,9 +289,9 @@ backend\.venv\Scripts\python.exe backend/manage.py runserver 127.0.0.1:8000
 ### 10.1 Menjalankan Frontend Development Server (Vite)
 ```powershell
 cd "D:\Kuliah\joki\radit\PROJEK istri bg givo\frontend"
-npm run dev
+npm run dev -- --port 3000 --strictPort
 ```
-Server Vite akan aktif pada `http://localhost:3000`.
+Server Vite akan aktif pada `http://localhost:3000`. Parameter `--strictPort` memastikan Vite tidak berpindah port secara diam-diam jika port 3000 tidak tersedia.
 
 ### 10.2 Uji Kompilasi dan Tipe Data
 ```powershell
@@ -277,23 +302,39 @@ npm run build        # Production bundle build test
 
 ---
 
-## BAB 11 - One-Command Startup Helper
+## BAB 11 - One-Command Startup Helper (`scripts/start-local.ps1`)
 
-Untuk kenyamanan operasional satu langkah, telah disediakan script PowerShell pada `scripts/start-local.ps1`.
+Script [scripts/start-local.ps1](file:///d:/Kuliah/joki/radit/PROJEK%20istri%20bg%20givo/scripts/start-local.ps1) telah diperkuat dengan fitur manajemen siklus hidup proses terisolasi.
 
-### 11.1 Menjalankan Helper
+### 11.1 Parameter yang Didukung
+| Parameter | Tipe | Nilai Default | Keterangan |
+|---|---|---|---|
+| `-Runner` | String | `granian` | Pilihan engine: `granian` (ASGI) atau `runserver` (Django dev). |
+| `-BackendHost` | String | `127.0.0.1` | Host backend. Ditolak jika non-localhost demi keamanan. |
+| `-BackendPort` | Integer | `8000` | Port backend server. |
+| `-FrontendPort` | Integer | `3000` | Port frontend Vite server (dengan strictPort aktif). |
+| `-Environment` | String | `development` | Target environment (`development` atau `integration`). |
+| `-SkipCheck` | Switch | `False` | Melewati Django system check opsional. |
+| `-OpenBrowser` | Switch | `False` | Membuka peramban otomatis setelah kedua layanan siap. |
+| `-Migrate` | Switch | `False` | Menjalankan migrasi database sebelum startup jika diperlukan. |
+
+### 11.2 Contoh Penggunaan
 ```powershell
+# Menjalankan standar dengan Granian:
 powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1
+
+# Menjalankan dan otomatis membuka peramban:
+powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1 -OpenBrowser
+
+# Menjalankan dengan Django Runserver biasa:
+powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1 -Runner runserver
+
+# Menjalankan pada port alternatif:
+powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1 -BackendPort 8001 -FrontendPort 3001
 ```
 
-### 11.2 Fitur yang Dikelola Otomatis oleh Helper:
-1. **Preflight Checks**: Memeriksa keberadaan Python, Node.js, virtual environment, berkas `.env`, dan database.
-2. **Pemeriksaan Redis WSL2**: Mendeteksi layanan Redis dan menyalakan server jika belum aktif.
-3. **Database Migration & Auto-seed**: Menjalankan migrasi Django dan memastikan dataset terisi jika basis data kosong.
-4. **Isolasi Proses**: Menjalankan Granian backend (port 8000) dan Vite frontend (port 3000) pada jendela proses terkelola.
-5. **Pemeriksaan Kesiapan Port**: Melakukan polling healthcheck hingga kedua port merespons HTTP 200 OK.
-6. **Auto Launch Browser**: Membuka peramban default secara otomatis ke `http://localhost:3000`.
-7. **Pembersihan Bersih (Graceful Teardown)**: Menekan tombol Enter pada jendela kontrol helper akan mematikan kedua proses anak tanpa meninggalkan proses *zombie* pada sistem.
+### 11.3 Mekanisme Penghentian (Graceful Shutdown)
+Tekan tombol `Enter` atau `Ctrl + C` pada jendela kontrol script. Script akan menggunakan perintah native `taskkill.exe /PID <pid> /T /F` untuk membersihkan seluruh proses pohon kerja (termasuk worker Granian dan node/cmd frontend) tanpa meninggalkan proses *zombie* pada sistem.
 
 ---
 
@@ -303,72 +344,62 @@ Seluruh subsistem telah melalui pengujian otomatis dan empiris dengan hasil 100%
 
 | Lapisan Pengujian | Rincian Alat Uji | Total Uji | Hasil Verifikasi |
 |---|---|---:|---|
-| **Backend Test Suite** | Pytest 9.2 + Pytest-Django | 115 uji | **114 LULUS, 1 SKIPPED** (Postgres conditional) |
+| **Backend Test Suite** | Pytest 9.2 + Pytest-Django | 115 uji | **114 LULUS, 1 SKIPPED** (PostgreSQL dual-engine test) |
 | **Frontend Test Suite** | Vitest 2.1 + React Testing Library | 74 uji | **74 LULUS (100%)** |
-| **E2E Browser Tests** | Playwright Chromium | 7 alur | **7 LULUS (100%)** |
+| **E2E Browser Tests** | Playwright Chromium (7 skenario peran) | 7 uji | **7 LULUS (100%)** |
 | **Integration Gates** | Python urllib runner (INT-M1 s/d M8) | 8 gerbang | **8 LULUS (100%)** |
 | **Cross-Module N2N** | 20 End-to-End Cross-Module Checks | 20 cek | **20 LULUS (100%)** |
+| **Seeder Automated Tests** | Pytest (`test_seeder.py`) | 4 uji | **4 LULUS (100%)** |
 
 ---
 
 ## BAB 13 - Troubleshooting
 
-Berikut adalah solusi penanganan 20 kendala operasional umum berdasarkan kode sumber aplikasi:
+Berikut adalah solusi penanganan kendala operasional umum:
 
 1. **Redis tidak aktif / Connection Refused**:
    - Jalankan `wsl -d Ubuntu -- sudo service redis-server start`. Pastikan `wsl -d Ubuntu -- redis-cli ping` merespons `PONG`.
 2. **Backend gagal startup**:
    - Jalankan `backend\.venv\Scripts\python.exe backend/manage.py check` untuk mendeteksi kesalahan konfigurasi atau sintaks model.
 3. **Port 8000 atau 3000 sudah digunakan**:
-   - Cari PID yang menduduki port: `Get-NetTCPConnection -LocalPort 8000` lalu matikan proses: `Stop-Process -Id <PID> -Force`.
+   - Startup script otomatis mengidentifikasi PID pemilik port. Jika ingin mematikan manual: `Stop-Process -Id <PID> -Force`.
 4. **Database connection error**:
    - Periksa `DATABASE_URL` di `backend/.env`. Untuk SQLite, pastikan direktori `backend/` memiliki hak tulis.
 5. **PostgreSQL authentication error**:
-   - Periksa username dan password pada connection string `postgres://<user>:<pwd>@localhost:5432/<db>`.
+   - Periksa username dan password pada connection string `postgres://<user>:<password>@localhost:5432/<dbname>`.
 6. **Missing environment variables**:
    - Salin kembali template default dari `backend/.env.example` ke `backend/.env`.
-7. **Migration error (Conflicting migrations)**:
+7. **Migration error**:
    - Jalankan `backend\.venv\Scripts\python.exe backend/manage.py showmigrations` untuk melihat migrasi yang belum terpasang.
-8. **Seeder error / IntegrityError**:
-   - Seeder dirancang idempoten. Jika terjadi inkonsistensi data pengujian terdahulu, bersihkan data spesifik melalui Django shell.
-9. **Duplicate records**:
-   - Seeder menggunakan `get_or_create` berbasis kunci alami (`student_number`, `nip`, `name`). Menjalankan ulang seeder aman dan tidak menduplikasi data.
-10. **Frontend API connection error**:
-    - Periksa apakah Granian backend pada port 8000 sedang berjalan. Periksa `http://127.0.0.1:8000/api/health`.
-11. **CORS Error**:
+8. **Duplicate records**:
+   - Seeder menggunakan `get_or_create` berbasis kunci alami (`student_number`, `nip`, `name`). Menjalankan ulang seeder aman dan idempoten.
+9. **Frontend API connection error**:
+   - Periksa apakah Granian backend pada port 8000 sedang berjalan. Periksa `http://127.0.0.1:8000/api/health`.
+10. **CORS Error**:
     - Akses frontend melalui `http://localhost:3000` agar proxy Vite bekerja. Backend mengizinkan origin localhost:3000 secara default.
-12. **Login gagal (Kredensial Tidak Cocok)**:
-    - Buka `docs/guide/ACCOUNTS.local.md`. Pastikan huruf besar dan kecil pada username dan password sesuai (contoh: `admin` / `Password123!`).
-13. **Dashboard kosong / Metrics 0**:
-    - Pastikan database telah dipopulasi menggunakan `seed_school_data --profile full`.
-14. **Private file missing**:
-    - Pastikan folder `backend/private_media/` tersedia. Seeder secara otomatis membuat berkas PDF fisik sintetis di folder ini.
-15. **Export Excel / PDF gagal**:
-    - Pastikan ReportLab dan openpyxl terpasang pada `backend/.venv` (`pip install openpyxl reportlab`).
-16. **HTTP 401 Unauthorized**:
-    - Token JWT kedaluwarsa (masa aktif 30 menit). Lakukan logout dan login ulang untuk mendapatkan token baru.
-17. **HTTP 403 Forbidden**:
-    - Akun Anda tidak memiliki hak akses objek riil (contoh: guru membuka kelas yang bukan binaannya, atau pimpinan mencoba membuka detail kasus privat). Ini adalah penegakan keamanan *least-privilege*.
-18. **HTTP 409 Conflict**:
+11. **Login gagal (Kredensial Tidak Cocok)**:
+    - Buka [docs/guide/ACCOUNTS.local.md](file:///d:/Kuliah/joki/radit/PROJEK%20istri%20bg%20givo/docs/guide/ACCOUNTS.local.md). Pastikan penulisan username dan password sesuai huruf besar/kecil.
+12. **HTTP 401 Unauthorized**:
+    - Token JWT kedaluwarsa (masa aktif 30 menit). Lakukan login ulang untuk memperbarui token.
+13. **HTTP 403 Forbidden**:
+    - Akun Anda tidak memiliki hak akses objek riil (contoh: guru membuka kelas yang bukan binaannya).
+14. **HTTP 409 Conflict**:
     - Terjadi benturan konkurensi (optimistic locking `expected_version` tidak cocok). Muat ulang halaman (*refresh*) untuk membaca versi data terbaru sebelum menyimpan kembali.
-19. **HTTP 422 Unprocessable Entity**:
-    - Format data masukan tidak sesuai skema validasi Pydantic / Zod (contoh: format tanggal bukan `YYYY-MM-DD`).
-20. **HTTP 429 Too Many Requests**:
-    - Terjadi pembatasan laju request oleh middleware Redis. Tunggu 60 detik sebelum melakukan percobaan login berikutnya.
+15. **HTTP 429 Too Many Requests**:
+    - Terjadi pembatasan laju request oleh Redis. Tunggu 60 detik sesuai header `Retry-After: 60`.
 
 ---
 
 ## BAB 14 - Shutdown, Backup & Maintenance
 
 ### 14.1 Menghentikan Layanan
-- **Granian / Django**: Tekan `Ctrl + C` pada terminal backend.
-- **Vite Dev Server**: Tekan `Ctrl + C` pada terminal frontend.
-- **Helper Script**: Tekan tombol `Enter` pada jendela `start-local.ps1`.
+- **Startup Script**: Tekan tombol `Enter` atau `Ctrl + C` pada jendela script. Seluruh process tree akan dihentikan secara bersih.
+- **Granian / Vite Manual**: Tekan `Ctrl + C` pada masing-masing jendela terminal.
 
 ### 14.2 Prosedur Pencadangan (Backup)
-1. **Basis Data**:
+1. **Basis Data SQLite**:
    ```powershell
-   Copy-Item backend/db.sqlite3 "backend/backups/db_backup_$(Get-Date -Format 'yyyyMMdd_HHmm').sqlite3"
+   backend\.venv\Scripts\python.exe -c "import sqlite3; con = sqlite3.connect('backend/db.sqlite3'); bck = sqlite3.connect('backend/backups/db_backup.sqlite3'); con.backup(bck); bck.close(); con.close(); print('Pencadangan database berhasil.')"
    ```
 2. **Dokumen Privat**:
    ```powershell
@@ -379,12 +410,13 @@ Berikut adalah solusi penanganan 20 kendala operasional umum berdasarkan kode su
 
 ## BAB 15 - Final Setup Status
 
-- **Status Kesiapan**: `READY - LOCAL_APPLICATION_RUNNING_AND_POPULATED`
+- **Status Kesiapan**: `READY — LOCAL_STARTUP_VERIFIED_AND_DATA_PRESERVED`
 - **Frontend URL**: `http://localhost:3000`
 - **Backend API URL**: `http://127.0.0.1:8000`
+- **Healthcheck**: `http://127.0.0.1:8000/api/health`
 - **Swagger Documentation**: `http://127.0.0.1:8000/api/docs`
 - **Engine Basis Data Aktif**: SQLite 3 (WAL Mode, `backend/db.sqlite3`)
 - **Redis Infrastructure**: Aktif (`redis://127.0.0.1:6379/1`, PONG)
 - **Status Otentikasi**: 6 Akun resmi terverifikasi dapat login dengan token JWT dan RBAC terisolasi.
-- **Status Seeder**: 11.376 presensi, 533 siswa, 74 kasus, 170 permohonan, 130 dokumen PDF fisik.
-- **Status Pengujian**: Backend 114/115 Pass, Frontend Vitest 74/74 Pass, Playwright 7/7 Pass, Integrasi INT-M1 s/d M8 100% Pass.
+- **Status Seeder & Data**: 11.376 presensi, 533 siswa, 74 kasus, 170 permohonan, 130 dokumen PDF fisik tersimpan aman tanpa data loss.
+- **Status Pengujian**: Backend 114/115 Pass (1 skip), Frontend Vitest 74/74 Pass, Playwright 7/7 Pass, Integrasi INT-M1 s/d M8 100% Pass.

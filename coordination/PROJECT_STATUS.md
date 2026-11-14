@@ -4,8 +4,8 @@
 
 | Metadata | Nilai |
 |---|---|
-| Tahap Proyek Saat Ini | **LOCAL-M1 - APPLICATION RUNNING, REALISTIC DATABASE SEEDING & OPERATIONAL READINESS** |
-| Status Keseluruhan | **READY — LOCAL_APPLICATION_RUNNING_AND_POPULATED** |
+| Tahap Proyek Saat Ini | **LOCAL-M1.1 - STARTUP SCRIPT HARDENING, DATA PRESERVATION & GUIDE CORRECTION** |
+| Status Keseluruhan | **READY — LOCAL_STARTUP_VERIFIED_AND_DATA_PRESERVED** |
 | Terakhir Diperbarui | 14 November 2026 |
 | Pengelola | Coordinator / Integration Agent |
 | Status Kontrak Bersama | **APPROVED BASELINE v1.1.0** (OpenAPI: 49 ops, 71 schemas; DBML: 18 tables) |
@@ -23,7 +23,7 @@
 | **UI/UX Design Track** | **COMPLETED & FROZEN** | `UX-M9.3: Handoff Freeze` | UI/UX Design Agent | Kanvas master terpadu 864 KB, 32 evidensi visual PNG, dua master docs |
 | **Jalur Backend** | **READY / COMPLETED** | `BE-M9.2: Env & Secret Closure` | Backend Agent | 110 automated tests PASS (1 skipped dual-engine), 84% coverage, fail-fast env validation |
 | **Jalur Frontend** | **READY / COMPLETED** | `FE-M10.2: Env Hardening Closure` | Frontend Agent | 74 Vitest PASS, 6 Playwright E2E PASS, zero client secret leak, typecheck & build clean |
-| **Jalur Integrasi** | **READY / VERIFIED** | `LOCAL-M1: Running & Seeded Readiness` | Integration Agent | 115 Pytest (114 PASS, 1 skip), 74 Vitest PASS, 7 Playwright PASS, 8 Gates + 20 N2N PASS, Seeder 11.376 Attendance, Ready for Local Evaluation |
+| **Jalur Integrasi** | **READY / VERIFIED** | `LOCAL-M1.1: Startup Hardening & Data Preserved` | Integration Agent | 115 Pytest (114 PASS, 1 skip), 74 Vitest PASS, 7 Playwright PASS, 8 Gates + 20 N2N PASS, Startup Script Hardened (Granian+Runserver, Localhost Guard, Healthcheck Polling, Taskkill /T /F), Guides Corrected (ACCOUNTS.local.md protected), 11.376 Attendance preserved |
 
 ---
 

@@ -15,8 +15,8 @@ Aplikasi Sistem Informasi Enterprise Administrasi SMA Negeri 1 Bunut dibangun un
 1. **Administrasi Data Akademik**: Pengelolaan data tahun ajaran, rombongan belajar (kelas), biodata siswa, data kepegawaian guru, serta penugasan wali kelas dan guru mata pelajaran.
 2. **Pencatatan Presensi Terpadu**: Pengisian presensi kehadiran siswa harian secara langsung oleh guru, pemantauan rekapitulasi kehadiran oleh wali kelas, serta pengunduhan laporan kehadiran berkala.
 3. **Layanan Bimbingan dan Kasus Kesiswaan**: Pencatatan kejadian kedisiplinan dan pembinaan siswa oleh tim kesiswaan dan guru BK, pemantauan alur penanganan, serta perlindungan ketat terhadap kerahasiaan catatan konseling privat siswa.
-4. **Pelayanan Persuratan Tata Usaha**: Pengajuan permohonan surat keterangan, legalisir ijazah, atau mutasi siswa oleh tata usaha, verifikasi berkas lampiran, dan penerbitan persetujuan resmi oleh Kepala Sekolah.
-5. **Dashboard Informasi Eksekutif**: Penyajian ringkasan data statistik sekolah bagi pimpinan untuk mendukung pengambilan keputusan berbasis data.
+4. **Pelayanan Persuratan Tata Usaha**: Pengajuan permohonan surat keterangan aktif sekolah, izin penelitian, rekomendasi, atau mutasi siswa oleh tata usaha, verifikasi berkas lampiran, dan penerbitan persetujuan resmi oleh Kepala Sekolah.
+5. **Dashboard Informasi Eksekutif**: Penyajian ringkasan data statistik sekolah bagi pimpinan untuk mendukung pemantauan dan pengambilan keputusan.
 
 ### 1.3 Pengguna Sistem
 Sistem ini digunakan oleh enam kelompok pengguna utama:
@@ -24,11 +24,11 @@ Sistem ini digunakan oleh enam kelompok pengguna utama:
 2. **Guru**: Tenaga pengajar pengampu mata pelajaran di kelas.
 3. **Wali Kelas**: Guru penanggung jawab rombongan belajar binaan.
 4. **Kesiswaan / Guru BK**: Staf pembimbing dan penegak tata tertib siswa.
-5. **Tata Usaha**: Petugas pelayanan persuratan dan kearsipan dokumen sekolah.
-6. **Pimpinan (Kepala Sekolah)**: Penanggung jawab sekolah dan pemberi persetujuan surat resmi.
+5. **Tata Usaha**: Petugas pelayanan persuratan dan pengelolaan arsip dokumen sekolah.
+6. **Pimpinan (Kepala Sekolah)**: Penanggung jawab sekolah dan pemberi persetujuan resmi dokumen.
 
 ### 1.4 Cara Mengakses Aplikasi
-Buka aplikasi melalui peramban web (Google Chrome, Microsoft Edge, atau Mozilla Firefox) pada komputer atau laptop yang terhubung ke jaringan sekolah:
+Buka aplikasi melalui peramban web (Google Chrome, Microsoft Edge, atau Mozilla Firefox) pada komputer atau laptop:
 - **Alamat Web Aplikasi**: `http://localhost:3000`
 
 ---
@@ -52,19 +52,19 @@ Setelah berhasil masuk, Anda akan melihat:
 - Klik ikon atau nama menu di sisi kiri untuk berpindah modul.
 - Pada layar berukuran kecil (ponsel atau tablet), menu samping dapat disembunyikan atau dimunculkan menggunakan tombol menu tiga garis di pojok kiri atas.
 
-### 2.4 Mengakses Profil dan Ganti Peran
+### 2.4 Mengakses Profil dan Ganti Peran (Multi-Role)
 - Klik nama Anda di sudut kanan atas untuk melihat informasi profil pegawai Anda.
 - Bagi pengguna yang memiliki lebih dari satu peran (misalnya Guru yang juga menjabat sebagai Wali Kelas), sistem menyediakan menu peralihan peran di header untuk berpindah konteks kerja secara instan tanpa perlu keluar dari sistem.
 
 ### 2.5 Keluar dari Sistem (Logout)
 1. Klik foto atau nama pengguna Anda di sudut kanan atas.
 2. Pilih menu **Keluar (Logout)**.
-3. Sistem akan menghapus sesi kerja Anda dan mengembalikan tampilan ke halaman login. Selalu biasakan keluar dari sistem jika menggunakan komputer bersama di ruang guru atau laboratorium.
+3. Sistem akan menghapus sesi kerja Anda dan mengembalikan tampilan ke halaman login.
 
 ### 2.6 Mengatasi Kendala Saat Masuk Sistem
 - **Pesan "Nama pengguna atau kata sandi salah"**: Periksa kembali penulisan huruf besar dan kecil pada nama pengguna serta kata sandi Anda.
-- **Pesan "Terlalu banyak percobaan masuk"**: Sistem mendeteksi beberapa kali kesalahan kata sandi berturut-turut. Tunggu selama 60 detik sebelum mencoba kembali.
-- **Halaman tidak merespons**: Pastikan kabel jaringan atau sambungan Wi-Fi Anda dalam keadaan aktif, lalu muat ulang halaman dengan menekan tombol `F5`.
+- **Pesan "Terlalu banyak permintaan"**: Sistem mendeteksi beberapa kali kesalahan percobaan masuk berturut-turut. Tunggu selama 60 detik sebelum mencoba kembali.
+- **Halaman tidak merespons**: Pastikan koneksi jaringan aktif, lalu muat ulang halaman dengan menekan tombol `F5`.
 
 ---
 
@@ -79,7 +79,7 @@ Setiap pengguna di SMAN 1 Bunut hanya dapat membuka menu dan menjalankan fungsi 
 | **Wali Kelas** | Dashboard Rombel, Rekap Presensi, Kasus Siswa Binaan | Memantau seluruh siswa di kelas binaan, memeriksa rekap absensi rombel, dan membaca status pembinaan siswa binaan. | Catatan konseling privat BK disamarkan secara otomatis demi etika kerahasiaan siswa; tidak dapat membuka kelas lain. |
 | **Kesiswaan / BK** | Manajemen Kasus Siswa, Riwayat Pembinaan | Mencatat kasus pelanggaran, mediasi orang tua, mencatat bimbingan konseling privat, dan menutup kasus. | Tidak dapat mengubah data rombel atau memproses permohonan surat tata usaha. |
 | **Tata Usaha** | Permohonan Surat, Pengarsipan Dokumen | Mendaftarkan permohonan surat siswa, mengunggah berkas syarat, meneruskan ke pimpinan, dan mengunduh arsip. | Tidak dapat mengubah hasil presensi guru atau memutuskan persetujuan surat yang menjadi wewenang pimpinan. |
-| **Pimpinan (Kepsek)**| Dashboard Pimpinan, Antrean Persetujuan Surat, Rekapitulasi Eksekutif | Memeriksa permohonan surat tata usaha, memberikan tanda tangan persetujuan resmi, menolak surat dengan catatan, dan mengunduh laporan tahunan. | Tidak dapat mengubah absensi harian kelas dan tidak dapat membuka rincian teks rahasia konseling bimbingan siswa. |
+| **Pimpinan (Kepsek)**| Dashboard Pimpinan, Antrean Persetujuan Surat, Rekapitulasi Eksekutif | Memeriksa permohonan surat tata usaha, memberikan persetujuan resmi, menolak surat dengan catatan, dan mengunduh laporan tahunan. | Tidak dapat mengubah absensi harian kelas dan tidak dapat membuka rincian teks rahasia konseling bimbingan siswa. |
 
 ---
 
@@ -90,9 +90,9 @@ Peran Administrator bertanggung jawab atas kelancaran operasional data induk sek
 ### 4.1 Mengelola Akun Pengguna dan Peran
 1. Buka menu **Kelola Pengguna** di sidebar.
 2. Untuk mendaftarkan akun staf baru: klik tombol **Tambah Pengguna Baru**.
-3. Masukkan nama pengguna, nama lengkap pegawai, dan pilih peran kedinasan yang sesuai.
-4. Simpan data. Pengguna baru dapat langsung mengaktifkan akunnya.
-5. Untuk menonaktifkan pengguna yang mutasi keluar: cari nama pengguna, klik tombol aksi, lalu pilih **Nonaktifkan Akun**.
+3. Masukkan Nama Pengguna (Username), Kata Sandi Awal, Nama Lengkap Pegawai, dan pilih satu atau lebih peran kedinasan yang sesuai.
+4. Klik **Simpan Pengguna**.
+5. Untuk menonaktifkan pengguna yang mutasi keluar: cari nama pengguna, klik tombol aksi, lalu pilih **Nonaktifkan Akun**. Akun yang nonaktif tidak dapat lagi login ke sistem.
 
 ### 4.2 Mengelola Tahun Ajaran Baru
 1. Buka menu **Data Master -> Tahun Ajaran**.
@@ -109,7 +109,7 @@ Peran Administrator bertanggung jawab atas kelancaran operasional data induk sek
 
 ### 4.4 Mengelola Biodata Siswa dan Penempatan Kelas
 1. Buka menu **Data Master -> Siswa**.
-2. Untuk mendaftarkan siswa: klik **Tambah Siswa**, masukkan NISN, Nama Lengkap, Jenis Kelamin, dan simpan.
+2. Untuk mendaftarkan siswa: klik **Tambah Siswa**, masukkan Nomor Induk Siswa (NIS), Nama Lengkap, Jenis Kelamin (Laki-laki / Perempuan), dan klik simpan.
 3. Untuk menempatkan siswa ke kelas: buka tab **Penempatan Siswa (Enrollment)**, pilih nama siswa, pilih kelas tujuan, dan masukkan tanggal mulai masuk rombel.
 
 ### 4.5 Menugaskan Wali Kelas dan Guru Mata Pelajaran
@@ -121,7 +121,7 @@ Peran Administrator bertanggung jawab atas kelancaran operasional data induk sek
 
 ### 4.6 Memeriksa Rekam Jejak Audit (Log Aktivitas)
 1. Buka menu **Audit Sistem**.
-2. Anda dapat melihat riwayat setiap mutasi data, aksi pembuatan permohonan, perubahan presensi, dan waktu login pengguna.
+2. Anda dapat melihat riwayat setiap mutasi data, pembuatan permohonan, perubahan presensi, dan waktu login pengguna.
 3. Manfaatkan kolom pencarian untuk melacak aktivitas staf berdasarkan nama pengguna atau rentang tanggal.
 
 ---
@@ -152,8 +152,8 @@ Jika terdapat kekeliruan (misalnya surat dokter baru diterima siang hari):
 4. Sistem mencatat pembaruan tersebut ke dalam riwayat perubahan presensi secara otomatis.
 
 ### 5.3 Menangani Konflik Penyimpanan Data
-Jika Anda dan guru piket membuka kelas yang sama secara bersamaan:
-- Sistem menggunakan mekanisme penguncian aman. Jika orang lain telah menyimpan perubahan terlebih dahulu, sistem akan memunculkan pesan peringatan: *"Data presensi telah diperbarui oleh pengguna lain. Halaman akan dimuat ulang untuk membaca data terbaru."*
+Jika Anda dan rekan guru piket membuka kelas yang sama secara bersamaan:
+- Sistem menggunakan mekanisme deteksi benturan versi data. Jika rekan Anda telah menyimpan perubahan terlebih dahulu, sistem akan memunculkan pesan peringatan bahwa data telah diperbarui.
 - Cukup muat ulang halaman, periksa perubahan terakhir, lalu simpan kembali catatan Anda.
 
 ---
@@ -170,11 +170,11 @@ Wali Kelas bertindak sebagai pembimbing utama rombongan belajar binaannya.
 1. Buka menu **Rekapitulasi Presensi**.
 2. Pilih rentang tanggal (misalnya dari tanggal 1 sampai 30 bulan berjalan).
 3. Sistem akan menyajikan tabel persentase kehadiran setiap siswa binaan beserta rincian jumlah Hadir, Sakit, Izin, dan Alpa.
-4. Klik tombol **Unduh Rekap Excel** jika Anda memerlukan salinan lembar rekap untuk arsip fisik atau laporan ke orang tua siswa.
+4. Klik tombol **Unduh Rekap Excel** jika Anda memerlukan salinan lembar kerja untuk arsip fisik atau laporan evaluasi bulanan.
 
 ### 6.3 Memantau Catatan Kasus Kesiswaan Siswa Binaan
 1. Buka menu **Kasus Siswa Binaan**.
-2. Anda hanya dapat melihat kasus yang dialami oleh siswa di kelas Anda.
+2. Anda hanya dapat melihat kasus yang dialami oleh siswa di kelas binaan Anda.
 3. Anda dapat membaca judul kasus, tanggal pelaporan, status penanganan (Baru, Diproses, atau Selesai), dan ringkasan arahan pembinaan.
 4. **Perlindungan Privasi**: Catatan konseling privat yang ditulis oleh Guru BK akan otomatis disamarkan (tampil sebagai `[Catatan konseling privat - Terproteksi]`). Hal ini bertujuan melindungi privasi psikologis siswa sesuai kode etik bimbingan konseling nasional.
 
@@ -222,11 +222,11 @@ Peran Tata Usaha melayani kebutuhan administrasi persuratan siswa secara cepat d
 1. Pada rincian permohonan, cari bagian **Dokumen Lampiran**.
 2. Klik tombol **Unggah Berkas**.
 3. Pilih berkas persyaratan dari komputer Anda (format PDF, ukuran maksimal 5 MB; contoh: Kartu Keluarga atau Kartu Pelajar).
-4. Berkas akan tersimpan secara terenkripsi pada arsip digital privat sekolah.
+4. Berkas akan tersimpan pada media penyimpanan privat terproteksi di server sekolah dan hanya dapat diunduh oleh staf berwenang.
 
 ### 8.3 Memproses dan Meneruskan ke Pimpinan
 1. Setelah seluruh syarat lengkap, klik tombol **Proses Berkas**. Status permohonan berubah menjadi **Diproses**.
-2. Buat draf naskah surat resmi sesuai nomor surat yang berlaku.
+2. Siapkan draf naskah surat resmi.
 3. Klik tombol **Ajukan Persetujuan ke Pimpinan**. Permohonan otomatis masuk ke antrean pimpinan sekolah.
 
 ### 8.4 Menerbitkan Surat dan Pengarsipan
@@ -250,10 +250,10 @@ Saat login sebagai Pimpinan, Anda akan disajikan indikator penting sekolah:
 ### 9.2 Menyetujui atau Menolak Permohonan Surat
 1. Buka menu **Antrean Persetujuan Pimpinan**.
 2. Klik pada salah satu permohonan yang menunggu persetujuan.
-3. Periksa rincian data pemohon, jenis surat, alasan permohonan, dan periksa berkas lampiran pendukung.
+3. Periksa rincian data pemohon, jenis surat, alasan permohonan, dan berkas lampiran pendukung.
 4. Pengambilan Keputusan:
-   - **Menyetujui**: Klik tombol hijau **Setujui Surat**. Masukkan catatan disposisi singkat jika diperlukan. Status permohonan otomatis berubah menjadi **Disetujui**, dan tata usaha dapat mencetak surat resmi.
-   - **Menolak**: Klik tombol merah **Tolak Permohonan**. Sistem mewajibkan Anda mengisi alasan penolakan (contoh: "Syarat kelulusan belum terpenuhi, harap lengkapi dokumen raport terlebih dahulu"). Status berubah menjadi **Ditolak** dan berkas dikembalikan ke tata usaha.
+   - **Menyetujui**: Klik tombol hijau **Setujui Surat**. Masukkan catatan disposisi singkat jika diperlukan. Status permohonan otomatis berubah menjadi **Disetujui**, dan tata usaha dapat menerbitkan surat resmi.
+   - **Menolak**: Klik tombol merah **Tolak Permohonan**. Sistem mewajibkan Anda mengisi alasan penolakan (contoh: "Syarat raport semester belum lengkap"). Status berubah menjadi **Ditolak** dan berkas dikembalikan ke tata usaha.
 
 ### 9.3 Mengunduh Laporan Eksekutif
 Pimpinan berhak mengunduh laporan rekapitulasi sekolah:
@@ -312,6 +312,13 @@ Tabel berikut disiapkan untuk memandu verifikasi manual fungsi aplikasi oleh tim
 | **TC-10** | Tata Usaha | Login sebagai `tata_usaha`| Teruskan permohonan surat ke tahap persetujuan pimpinan | Status permohonan berubah menjadi Menunggu Persetujuan | | | |
 | **TC-11** | Pimpinan | Login sebagai `kepsek` | Buka Antrean Persetujuan, klik Setujui Surat | Status surat berubah menjadi Disetujui | | | |
 | **TC-12** | Pimpinan | Login sebagai `kepsek` | Buka menu Laporan, unduh Laporan Presensi Excel | Berkas spreadsheet `.xlsx` berhasil diunduh dan dapat dibuka | | | |
+| **TC-13** | Multi-Role | Login sebagai `guru_walikelas` | Gunakan pemilih peran di header untuk beralih peran | Konteks dashboard dan menu navigasi beralih seketika | | | |
+| **TC-14** | Pimpinan | Login sebagai `kepsek` | Buka permohonan surat, klik Tolak dengan alasan wajib | Permohonan berstatus Ditolak dengan alasan tercatat | | | |
+| **TC-15** | Guru | Login sebagai `guru` | Coba simpan presensi dengan versi data yang sudah usang | Muncul notifikasi benturan data (409) dan saran refresh | | | |
+| **TC-16** | Tata Usaha | Login sebagai `tata_usaha`| Klik tombol unduh dokumen pada rincian permohonan | Berkas PDF lampiran terunduh dengan utuh | | | |
+| **TC-17** | Guru | Login sebagai `guru` | Coba akses URL unduh dokumen privat persuratan | Akses ditolak dengan pesan HTTP 403 Forbidden | | | |
+| **TC-18** | Administrator | Login sebagai `admin` | Nonaktifkan akun staf yang mutasi | Akun berstatus nonaktif dan ditolak saat mencoba login | | | |
+| **TC-19** | Semua Peran | Login ke sistem | Masukkan kata kunci pada kolom pencarian tabel data | Hasil tabel terfilter secara instan dan navigasi halaman bekerja | | | |
 
 ---
 
@@ -332,17 +339,21 @@ Berikut adalah rangkuman solusi atas pertanyaan dan masalah yang sering dihadapi
 - **Solusi**: Hubungi Administrator atau Wakil Kepala Sekolah Bidang Kurikulum untuk memeriksa dan memperbarui data penugasan mengajar Anda di menu Penugasan Guru.
 
 ### 4. Mengapa muncul peringatan "Data presensi telah diperbarui pengguna lain"?
-- **Penyebab**: Terjadi pembaharuan data bersamaan (misalnya guru piket sedang mencatat izin di saat yang sama Anda menyimpan absensi).
+- **Penyebab**: Terjadi pembaruan data bersamaan (misalnya guru piket sedang mencatat izin di saat yang sama Anda menyimpan absensi).
 - **Solusi**: Cukup muat ulang halaman peramban web Anda, periksa data terbaru yang sudah masuk, lalu simpan kembali catatan Anda.
 
-### 5. Mengapa permohonan surat tidak dapat diteruskan ke Pimpinan?
+### 5. Mengapa muncul pesan "Terlalu banyak permintaan"?
+- **Penyebab**: Terjadi beberapa kali percobaan masuk yang gagal dalam waktu singkat.
+- **Solusi**: Sistem menerapkan pembatasan keamanan selama 60 detik (sesuai header `Retry-After: 60`). Tunggu 1 menit sebelum mencoba masuk kembali.
+
+### 6. Mengapa permohonan surat tidak dapat diteruskan ke Pimpinan?
 - **Penyebab**: Status permohonan belum berada pada tahap "Diproses", atau berkas persyaratan wajib belum diunggah.
 - **Solusi**: Pastikan Anda telah menekan tombol "Proses Berkas" terlebih dahulu dan memastikan berkas lampiran pendukung telah terunggah dengan baik.
 
-### 6. Mengapa tombol persetujuan surat tidak muncul pada akun saya?
+### 7. Mengapa tombol persetujuan surat tidak muncul pada akun saya?
 - **Penyebab**: Anda sedang login menggunakan akun Tata Usaha atau Guru.
 - **Solusi**: Wewenang persetujuan surat resmi dinas sekolah berada secara eksklusif pada akun Pimpinan (Kepala Sekolah). Masuklah menggunakan akun Kepala Sekolah untuk memberikan persetujuan.
 
-### 7. Mengapa sistem tiba-tiba meminta saya login kembali saat sedang bekerja?
-- **Penyebab**: Masa aktif sesi keamanan (token masuk) telah berakhir (30 menit tanpa aktivitas).
+### 8. Mengapa sistem meminta saya login kembali saat sedang bekerja?
+- **Penyebab**: Masa aktif sesi keamanan (token masuk) telah berakhir (30 menit). Sistem mencoba memperbarui sesi otomatis dengan refresh token (aktif 7 hari). Jika sesi berakhir sepenuhnya, Anda akan diminta login kembali.
 - **Solusi**: Masukkan kembali nama pengguna dan kata sandi Anda. Fitur ini dirancang untuk melindungi kerahasiaan data siswa apabila komputer ditinggalkan tanpa pengawasan di meja kerja.
