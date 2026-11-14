@@ -19,14 +19,15 @@
 | Tanggal Penyelesaian | 14 November 2026 |
 | Pengelola | Principal Frontend Engineer / Frontend Agent |
 | Status Akhir | **`READY — FRONTEND_VERIFIED_UX_REFINED_AND_READY_FOR_INTEGRATION`** |
+| Verifikasi Terakhir | 14 November 2026 (INT-M8.1 Addendum - Centralized Configuration) |
 
 ---
 
 ## 2. Executive Summary
 
-Frontend Track untuk Sistem Informasi Enterprise SMA Negeri 1 Bunut telah berhasil diselesaikan secara menyeluruh hingga milestone **FE-M10.1 (Independent Frontend Verification, Contract Alignment, Browser Testing & UI/UX Closure)**. Seluruh 18 screen groups (S01-S18), 6 dashboard peran spesifik, komponen UI Atomic Design (Atoms, Molecules, Organisms, Templates, Pages), integrasi 49 operasi OpenAPI v1.1.0, arsitektur keamanan token memori volatil tanpa kebocoran web storage (*zero token storage leakage*), kebijakan safe retry untuk mutasi non-idempoten, kontrol konkurensi optimistik (*optimistic concurrency locking* via `expected_version`), serta penanganan privasi konseling (DEC-TECH-18) telah 100% diimplementasikan dan tervalidasi.
+Frontend Track untuk Sistem Informasi Enterprise SMA Negeri 1 Bunut telah berhasil diselesaikan secara menyeluruh hingga milestone **FE-M10.1 dan INT-M8.1 Addendum (Centralized Environment Configuration & Secret Management)**. Seluruh 18 screen groups (S01-S18), 6 dashboard peran spesifik, komponen UI Atomic Design (Atoms, Molecules, Organisms, Templates, Pages), integrasi 49 operasi OpenAPI v1.1.0, arsitektur keamanan token memori volatil tanpa kebocoran web storage (*zero token storage leakage*), kebijakan safe retry untuk mutasi non-idempoten, kontrol konkurensi optimistik (*optimistic concurrency locking* via `expected_version`), penanganan privasi konseling (DEC-TECH-18), serta manajemen konfigurasi environment terpusat telah 100% diimplementasikan dan tervalidasi.
 
-Penyempurnaan utama pada FE-M10.1:
+Penyempurnaan utama pada FE-M10.1 & INT-M8.1 Addendum:
 1. **Penyelarasan Kontrak Penuh (49 Operasi):** Seluruh 49 operasi OpenAPI terpetakan dengan tepat dalam format camelCase `operationId`. Tiga operasi yang sebelumnya tertunda kini telah memiliki komponen konsumen aktif:
    - `getUserDetail` (`GET /accounts/users/{id}`) terhubung ke modal detail akun pengguna di `AccountManagementPage`.
    - `updateEnrollment` (`PATCH /master/enrollments/{id}`) terhubung ke fitur pembaruan tanggal selesai penempatan rombel di `AssignmentsPage`.
@@ -35,8 +36,13 @@ Penyempurnaan utama pada FE-M10.1:
 3. **Manajemen Jenis Layanan Persuratan:** Menyediakan antarmuka katalog jenis layanan administrasi pada `AcademicMasterPage` untuk Administrator yang mengonsumsi `listServiceTypes` (`GET /administration/service-types`), `createServiceType` (`POST /administration/service-types`), dan `updateServiceType` (`PATCH /administration/service-types/{id}`).
 4. **Penanganan Kegagalan Parsial (Partial Failure Handling):** Pada `NewRequestPage`, jika permohonan surat berhasil dibuat namun pengunggahan berkas lampiran gagal, sistem mencegah duplikasi dengan menyediakan tombol coba unggah ulang pada ID permohonan yang sama.
 5. **Kebijakan Safe Retry Sesi:** Pada `api-client.ts`, hanya request idempoten (GET, HEAD, OPTIONS, PUT, DELETE) yang diulang otomatis pasca-refresh token 401; request mutasi non-idempoten (POST) dicegah dari eksekusi ganda dan dibatalkan dengan notifikasi ramah pengguna. Pembersihan antrean saat logout mencegah race conditions.
-6. **Pengujian Browser Nyata (Playwright E2E):** Suite E2E berbasis browser Chromium nyata menguji alur login dan navigasi 6 peran pengguna (Administrator, Guru, Wali Kelas, Kesiswaan, Tata Usaha, Pimpinan) dengan hasil **6 PASS (100%)** dan 8 tangkapan layar bukti visual tersimpan di `frontend/evidence/`.
-7. **Pengujian Otomatis Komprehensif:** 15 berkas uji Vitest dengan **71 test cases berstatus PASS (100% lulus, 0 gagal)**, audit aksesibilitas otomatis `axe-core` pada `LoginPage` dan komponen lulus tanpa pelanggaran (WCAG 2.2 AA), TypeScript `tsc --noEmit` bersih (0 errors), dan kompilasi build produksi Vite selesai dalam 7.71s.
+6. **Pemusatan Konfigurasi Environment & Sanitasi URL:**
+   - Normalisasi `VITE_API_BASE_URL` melalui `resolveApiBaseUrl(raw)` pada `frontend/src/lib/api-client.ts` (penghapusan trailing slash otomatis, penambahan otomatis path `/api` pada origin absolute, dan pencegahan duplikasi prefix `/api/api/...`).
+   - Isolasi target reverse-proxy Vite `BACKEND_PROXY_TARGET` pada level build/dev server (`process.cwd()`) tanpa bocor ke client-side JavaScript bundle.
+   - Dukungan konfigurasi Playwright dinamis via `PLAYWRIGHT_BASE_URL` dengan fallback aman ke `http://localhost:3000`.
+   - Penyediaan template environment lengkap: `frontend/.env`, `frontend/.env.example`, dan `frontend/.env.production.example`.
+7. **Pengujian Browser Nyata (Playwright E2E):** Suite E2E berbasis browser Chromium nyata menguji alur login dan navigasi 6 peran pengguna (Administrator, Guru, Wali Kelas, Kesiswaan, Tata Usaha, Pimpinan) dengan hasil **6 PASS (100%)** dan 8 tangkapan layar bukti visual tersimpan di `frontend/evidence/`.
+8. **Pengujian Otomatis Komprehensif:** 15 berkas uji Vitest dengan **74 test cases berstatus PASS (100% lulus, 0 gagal)** termasuk pengujian pencegahan kebocoran secret pada bundle client, audit aksesibilitas otomatis `axe-core` pada `LoginPage` dan komponen lulus tanpa pelanggaran (WCAG 2.2 AA), TypeScript `tsc --noEmit` bersih (0 errors), dan kompilasi build produksi Vite selesai dalam 9.00s.
 
 Status kesiapan akhir ditetapkan sebagai:
 **`READY — FRONTEND_VERIFIED_UX_REFINED_AND_READY_FOR_INTEGRATION`**
@@ -256,7 +262,7 @@ Running 6 tests using 1 worker
 
 ## 11. Automated Test Suite Breakdown (Vitest)
 
-Total: **15 Test Files, 71 Tests PASS (100% Lulus, 0 Gagal)**
+Total: **15 Test Files, 74 Tests PASS (100% Lulus, 0 Gagal)**
 
 | Test File Path | Kategori | Jumlah Uji | Status |
 |---|---|:---:|:---:|
@@ -274,7 +280,7 @@ Total: **15 Test Files, 71 Tests PASS (100% Lulus, 0 Gagal)**
 | `tests/features/pages-coverage.test.tsx` | Cakupan Layar Lainnya | 9 | **PASS** |
 | `tests/unit/auth-store.test.ts` | Unit Zustand Auth Store | 3 | **PASS** |
 | `tests/unit/formatters.test.ts` | Unit Formatter Indonesia | 5 | **PASS** |
-| `tests/unit/api-client.test.ts` | Unit Axios API Client | 3 | **PASS** |
+| `tests/unit/api-client.test.ts` | Unit Axios API Client & Config | 6 | **PASS** |
 
 ---
 
@@ -309,7 +315,39 @@ Hasil kompilasi build produksi Vite 5.4.21:
 
 ---
 
-## 14. Responsive Behavior
+## 14. Centralized Environment Configuration & Secret Management
+
+Mengacu pada TRD Bab 9 dan mandat INT-M8.1 Addendum, arsitektur konfigurasi environment pada frontend dipusatkan dan diisolasi dengan standar keamanan ketat:
+
+### 1. Variabel Lingkungan & Template File
+Tersedia tiga berkas environment pada direktori `frontend/`:
+- `frontend/.env`: Konfigurasi pengembang lokal default yang aktif saat menjalankan `npm run dev`.
+  - `VITE_API_BASE_URL=/api`: Mengarahkan seluruh panggilan API melalui reverse-proxy Vite lokal.
+  - `BACKEND_PROXY_TARGET=http://127.0.0.1:8000`: Target upstream server Django Ninja backend.
+- `frontend/.env.example`: Template publik berisi panduan konfigurasi dev dan reverse proxy.
+- `frontend/.env.production.example`: Template publik untuk deployment produksi (misalnya `VITE_API_BASE_URL=/api` atau URL domain CDN/API publik).
+
+### 2. Normalisasi URL API & Interceptor Prefix Duplikat
+Pada `frontend/src/lib/api-client.ts`, fungsi sentral `resolveApiBaseUrl(raw?: string)` mengimplementasikan normalisasi defensif:
+1. Menghapus trailing slash (misal `http://localhost:8000/` menjadi `http://localhost:8000`).
+2. Menjamin keberadaan path `/api` bila input adalah origin root absolut (misal `http://localhost:8000` menjadi `http://localhost:8000/api`).
+3. Menangani fallback ke default `/api` bila input kosong, null, atau undefined.
+4. Axios request interceptor secara cerdas mendeteksi apakah `config.url` dimulai dengan `/api/` saat `baseURL` telah berakhiran `/api`, memangkas prefix duplikat untuk mencegah kesalahan fatal HTTP 404 (seperti `/api/api/auth/login`).
+
+### 3. Pencegahan Kebocoran Secret ke Client Bundle (Zero Secret Leakage)
+Sesuai arsitektur bundler Vite:
+- Hanya variabel dengan prefix `VITE_*` yang diekspos ke client bundle browser via `import.meta.env`.
+- Variabel server-side seperti `BACKEND_PROXY_TARGET` dibaca pada `vite.config.ts` menggunakan helper `loadEnv(mode, process.cwd(), '')` hanya pada runtime Node.js dev server, sehingga tidak pernah dibundel ke berkas JavaScript client.
+- Variabel backend sensitif seperti `DATABASE_URL`, `SECRET_KEY`, dan `REDIS_URL` terbukti 100% tidak pernah diekspos ke client bundle (divalidasi melalui suite pengujian otomatis `frontend/tests/unit/api-client.test.ts`).
+
+### 4. Perbedaan Build-time vs Runtime pada SPA
+Sebagai Single-Page Application statis yang dikompilasi ke HTML/JS/CSS:
+- Nilai variabel `import.meta.env.VITE_*` dibekukan (*inlined*) pada saat proses kompilasi (`npm run build`).
+- Setiap perubahan variabel environment produksi memerlukan proses build ulang (`vite build`) atau penyediaan reverse-proxy layer (seperti Nginx) pada reverse path `/api`.
+
+---
+
+## 15. Responsive Behavior
 
 Aplikasi dirancang secara responsif melintasi 3 breakpoint utama:
 1. **Desktop (>= 1024px):** Layout sidebar persisten, tabel lebar penuh dengan sorting dan aksi baris cepat.
@@ -318,7 +356,7 @@ Aplikasi dirancang secara responsif melintasi 3 breakpoint utama:
 
 ---
 
-## 15. Quality Gates Matrix (G1 to G18)
+## 16. Quality Gates Matrix (G1 to G18)
 
 | Gate ID | Nama Quality Gate | Status | Keterangan & Catatan Verifikasi |
 |---|---|:---:|---|
@@ -328,13 +366,13 @@ Aplikasi dirancang secara responsif melintasi 3 breakpoint utama:
 | **G4** | Functional Completeness | **PASS** | Seluruh 18 screen groups dan 6 dashboard peran berfungsi penuh tanpa data fiktif. |
 | **G5** | Contract Compliance | **PASS** | OpenAPI v1.1.0 (49 endpoint) terpetakan 100% tanpa modifikasi sepihak. |
 | **G6** | Authentication & RBAC | **PASS** | Otorisasi multi-peran, route guards, active role switcher, memory tokens teruji. |
-| **G7** | Unit/Component Tests | **PASS** | 71 test cases pada 15 berkas uji Vitest 100% lulus (0 gagal). |
+| **G7** | Unit/Component Tests | **PASS** | 74 test cases pada 15 berkas uji Vitest 100% lulus (0 gagal). |
 | **G8** | Integration & N2N | **PASS** | Alur integrasi antar-komponen dan antarmuka fitur tervalidasi. |
 | **G9** | Browser E2E | **PASS** | 6 skenario Playwright E2E berbasis Chromium nyata 100% lulus (8.1s). |
 | **G10** | Security Hardening | **PASS** | Zero-token leakage di web storage, safe retry policy non-idempoten aktif. |
 | **G11** | Accessibility (WCAG 2.2 AA)| **PASS** | Uji otomatis axe-core menghasilkan 0 pelanggaran aksesibilitas. |
 | **G12** | Responsive Behavior | **PASS** | 3 breakpoint (mobile drawer, tablet, desktop) berfungsi adaptif. |
-| **G13** | Performance Benchmark | **PASS** | Build produksi 7.71s, ukuran chunk teroptimasi manualChunks <500 kB. |
+| **G13** | Performance Benchmark | **PASS** | Build produksi 7.71s - 9.00s, ukuran chunk teroptimasi manualChunks <500 kB. |
 | **G14** | Visual Consistency | **PASS** | Selaras dengan 32 bukti visual PNG pada `design/evidence/`. |
 | **G15** | Real Live Integration | **PASS** | Terhubung ke backend nyata via proxy Vite, login dan routing 6 peran diverifikasi. |
 | **G16** | UI/UX Improvement | **PASS** | Penyempurnaan kontras border, table density, partial failure recovery tuntas. |
@@ -343,7 +381,7 @@ Aplikasi dirancang secara responsif melintasi 3 breakpoint utama:
 
 ---
 
-## 16. Final Readiness Decision
+## 17. Final Readiness Decision
 
 ```text
 STATUS AKHIR FRONTEND:
@@ -351,4 +389,4 @@ READY — FRONTEND_VERIFIED_UX_REFINED_AND_READY_FOR_INTEGRATION
 ```
 
 **Justifikasi Keputusan:**
-Seluruh kewajiban implementasi fungsional, keselarasan kontrak OpenAPI v1.1.0 (49 operasi), pengujian unit/komponen (71 PASS, 0 FAIL), pengujian browser Playwright E2E pada 6 peran pengguna nyata (6 PASS, 0 FAIL), pemenuhan aksesibilitas WCAG 2.2 AA, pengerasan keamanan memori token dan safe retry policy, serta kompilasi produksi bersih telah 100% tuntas dan tervalidasi. Frontend telah siap sepenuhnya untuk tahap integrasi sistem menyeluruh.
+Seluruh kewajiban implementasi fungsional, keselarasan kontrak OpenAPI v1.1.0 (49 operasi), pengujian unit/komponen (74 PASS, 0 FAIL), pengujian browser Playwright E2E pada 6 peran pengguna nyata (6 PASS, 0 FAIL), pemenuhan aksesibilitas WCAG 2.2 AA, pengerasan keamanan memori token, isolasi environment variables dan proteksi kebocoran kredensial, serta kompilasi produksi bersih telah 100% tuntas dan tervalidasi. Frontend telah siap sepenuhnya untuk tahap integrasi sistem menyeluruh.
