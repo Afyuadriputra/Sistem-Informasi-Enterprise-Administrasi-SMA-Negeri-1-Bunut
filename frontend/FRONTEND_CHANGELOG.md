@@ -218,3 +218,40 @@ All notable changes to the frontend codebase are documented chronologically in t
 - Executed `npm run test`: **58 tests PASS (100%)**.
 - Completed Master Implementation Report `frontend/FRONTEND_IMPLEMENTATION_REPORT.md` and updated `coordination/FRONTEND_STATUS.md`.
 - Final status declared: `CONDITIONALLY_READY — FRONTEND_COMPLETE_WITH_INTEGRATION_BLOCKERS`.
+
+---
+
+## FE-M10.1 — Independent Frontend Verification, Contract Alignment, Browser Testing & UI/UX Closure
+*Completed: 14 November 2026*
+
+### Added & Updated
+- **OpenAPI v1.1.0 Full Contract Alignment:**
+  - Audited all 49 operations in `contracts/openapi.v1.yaml` with consistent camelCase `operationId`.
+  - Added modal detail akun pengguna pada `AccountManagementPage.tsx` yang mengonsumsi `getUserDetail` (`GET /accounts/users/{id}`).
+  - Added alur end-dating penempatan rombel pada `AssignmentsPage.tsx` yang mengonsumsi `updateEnrollment` (`PATCH /master/enrollments/{id}`).
+  - Added alur end-dating penugasan guru pada `AssignmentsPage.tsx` yang mengonsumsi `updateClassAssignment` (`PATCH /master/assignments/{id}`).
+  - Added tab katalog jenis layanan administrasi pada `AcademicMasterPage.tsx` untuk Administrator mengonsumsi `listServiceTypes` (`GET /administration/service-types`), `createServiceType` (`POST /administration/service-types`), dan `updateServiceType` (`PATCH /administration/service-types/{id}`).
+  - Corrected enum status siswa pada `StudentListPage.tsx` dan `StatusBadge.tsx` menjadi `['AKTIF', 'MUTASI_KELUAR', 'LULUS', 'NONAKTIF']`.
+  - Verified operasi pembaruan data siswa menggunakan metode HTTP `PATCH /master/students/{id}` (`updateStudent`).
+- **Partial Failure Handling:**
+  - Added penanganan kegagalan parsial pada `NewRequestPage.tsx` di mana jika berkas lampiran gagal diunggah setelah permohonan surat berhasil dibuat, sistem mencegah pembuatan surat ganda dan menyediakan tombol coba unggah ulang pada ID permohonan yang sama.
+- **Session Security & Safe Retry Policy:**
+  - Added fungsi `isIdempotentRequest` pada `src/lib/api-client.ts`. Permintaan idempoten (GET, HEAD, OPTIONS, PUT, DELETE) diulang otomatis setelah refresh token; permintaan mutasi non-idempoten (POST) diblokir dari replay otomatis dengan kode `NON_IDEMPOTENT_MUTATION_ABORTED`.
+  - Added pembersihan antrean request (`failedQueue`) pada `clearAuthTokens()` saat logout untuk mencegah race conditions.
+- **Contract & Security Automated Tests:**
+  - Created `tests/contract/contract-alignment.test.ts` (7 tests) memverifikasi 49 operasi, penamaan camelCase, enum status siswa, dan skema request/response.
+  - Created `tests/security/safe-retry.test.ts` (5 tests) memverifikasi safe retry policy, penolakan otomatis mutasi non-idempoten, dan isolasi memori token.
+  - Added pengujian aksesibilitas `axe-core` pada `LoginPage` di `tests/accessibility/wcag.test.tsx` (5 tests, 0 pelanggaran).
+- **Playwright E2E Browser Testing:**
+  - Installed `@playwright/test` dan browser Chromium headless.
+  - Configured proxy Vite dev server (`http://localhost:3000/api` -> `http://127.0.0.1:8000/api`).
+  - Created `tests/e2e/auth-and-roles.spec.ts` menguji login dan navigasi 6 peran pengguna nyata: Administrator, Guru, Wali Kelas, Kesiswaan, Tata Usaha, Pimpinan.
+  - Generated 8 tangkapan layar bukti visual di `frontend/evidence/` (`e2e-01-admin-dashboard.png` s/d `e2e-08-kepsek-approvals.png`).
+
+### Verification Results
+- Vitest Automated Tests: **15 Test Files, 71 Tests PASS (100% Lulus, 0 Gagal)**.
+- Playwright E2E Browser Tests: **6 Tests PASS (8.1s)**.
+- TypeScript Compilation (`tsc --noEmit`): **Exit Code 0 (0 errors)**.
+- Production Build (`vite build`): **Exit Code 0 dalam 7.71s**.
+- Prettier Code Standard (`prettier --check`): **Exit Code 0 (Clean)**.
+- Final Status Declared: **`READY — FRONTEND_VERIFIED_UX_REFINED_AND_READY_FOR_INTEGRATION`**.
