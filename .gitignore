@@ -10,6 +10,8 @@
 *.key
 *.crt
 secrets/
+docs/guide/ACCOUNTS.local.md
+*.local.md
 
 # ==========================================
 # PYTHON / BACKEND & CONTRACTS
@@ -87,6 +89,8 @@ blob-report/
 *.db-journal
 *.log
 logs/
+private_media/
+backend/private_media/
 
 # ==========================================
 # AGENT / LLM / CODE INDEXING TOOLS
