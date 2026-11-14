@@ -3,18 +3,14 @@ from datetime import timedelta
 from pathlib import Path
 from urllib.parse import urlparse
 
+from config.env import load_environment, validate_environment
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Read .env file if present
-env_file = BASE_DIR / ".env"
-if env_file.exists():
-    with open(env_file, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                key, val = line.split("=", 1)
-                os.environ.setdefault(key.strip(), val.strip())
+# Centralized environment loader (supports DJANGO_ENV and explicit ENV_FILE)
+ENV_INFO = load_environment(BASE_DIR)
+DJANGO_ENV = ENV_INFO["django_env"]
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-insecure-secret-key-change-in-production-bunut-2026-xyz")
@@ -24,6 +20,22 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() in ("true", "1", "yes")
 
 allowed_hosts_raw = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,testserver")
 ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_raw.split(",") if h.strip()]
+
+database_url = os.environ.get("DATABASE_URL", "sqlite:///db.sqlite3")
+REDIS_URL = os.environ.get("REDIS_URL", "")
+PRIVATE_MEDIA_ROOT = Path(os.environ.get("PRIVATE_MEDIA_ROOT", BASE_DIR / "private_media")).resolve()
+PRIVATE_MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
+
+# Fail-fast validation of critical settings per environment
+validate_environment(
+    env_name=DJANGO_ENV,
+    secret_key=SECRET_KEY,
+    debug=DEBUG,
+    allowed_hosts=ALLOWED_HOSTS,
+    database_url=database_url,
+    redis_url=REDIS_URL,
+    private_media_root=PRIVATE_MEDIA_ROOT,
+)
 
 # Application definition
 INSTALLED_APPS = [
@@ -83,8 +95,6 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 # Database Strategy: SQLite with WAL mode by default, support for PostgreSQL
-database_url = os.environ.get("DATABASE_URL", "sqlite:///db.sqlite3")
-
 if database_url.startswith("postgresql://") or database_url.startswith("postgres://"):
     parsed = urlparse(database_url)
     DATABASES = {
@@ -95,9 +105,12 @@ if database_url.startswith("postgresql://") or database_url.startswith("postgres
             "PASSWORD": parsed.password or "",
             "HOST": parsed.hostname or "127.0.0.1",
             "PORT": parsed.port or 5432,
+            "TEST": {
+                "NAME": f"test_{parsed.path.lstrip('/') or 'sie_bunut'}",
+            },
         }
     }
-else:
+elif database_url.startswith("sqlite:///"):
     # SQLite WAL mode
     sqlite_path = database_url.replace("sqlite:///", "")
     if sqlite_path == "" or sqlite_path == ":memory:":
@@ -115,8 +128,14 @@ else:
                 "timeout": 20,
                 "init_command": "PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL;",
             },
+            "TEST": {
+                "NAME": str((BASE_DIR / "test_db.sqlite3").resolve()),
+            },
         }
     }
+else:
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(f"DATABASE_URL tidak valid: skema '{database_url}' tidak didukung.")
 
 # Custom User Model
 AUTH_USER_MODEL = "accounts.User"
@@ -157,10 +176,6 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Private Media Storage (outside public web root)
-PRIVATE_MEDIA_ROOT = Path(os.environ.get("PRIVATE_MEDIA_ROOT", BASE_DIR / "private_media")).resolve()
-PRIVATE_MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
-
 # Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -174,13 +189,12 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_EXPOSE_HEADERS = ["X-Request-ID"]
 
 # Cache & Redis configuration
-REDIS_URL = os.environ.get("REDIS_URL", "")
-
 if REDIS_URL:
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
             "LOCATION": REDIS_URL,
+            "KEY_PREFIX": os.environ.get("CACHE_KEY_PREFIX", "sie_bunut"),
         }
     }
 else:
