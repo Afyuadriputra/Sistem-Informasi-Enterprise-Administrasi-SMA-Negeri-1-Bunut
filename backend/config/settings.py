@@ -23,7 +23,11 @@ ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_raw.split(",") if h.strip()]
 
 database_url = os.environ.get("DATABASE_URL", "sqlite:///db.sqlite3")
 REDIS_URL = os.environ.get("REDIS_URL", "")
-PRIVATE_MEDIA_ROOT = Path(os.environ.get("PRIVATE_MEDIA_ROOT", BASE_DIR / "private_media")).resolve()
+_raw_media_root = os.environ.get("PRIVATE_MEDIA_ROOT", "private_media")
+if os.path.isabs(_raw_media_root):
+    PRIVATE_MEDIA_ROOT = Path(_raw_media_root).resolve()
+else:
+    PRIVATE_MEDIA_ROOT = (BASE_DIR / _raw_media_root).resolve()
 PRIVATE_MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
 
 # Fail-fast validation of critical settings per environment
