@@ -199,3 +199,38 @@ Seluruh catatan pembaruan teknis pada pengembangan backend dari milestone BE-M1 
   - Rekonsiliasi kontradiksi historis pada Bagian 1-20 `backend/BACKEND_IMPLEMENTATION_REPORT.md` agar konsisten dengan evaluasi Bab 21 dan penambahan Bab 22.
   - Status kesiapan backend final disertifikasi sebagai `CONDITIONALLY_READY — BACKEND_IMPLEMENTED_WITH_VERIFICATION_BLOCKERS` (16 PASS, 2 BLOCKED pada lingkungan infrastruktur host eksternal).
 
+---
+
+## [BE-M9.2] - Centralized Environment Configuration & Secret Management (INT-M8.1 Addendum)
+**Tanggal:** 14 November 2026
+
+### Ditambahkan & Diperbarui:
+- **Pemusatan Konfigurasi Environment & Secret Management:**
+  - Pembuatan modul `backend/config/env.py` yang menyediakan fungsi sentral `load_environment(base_dir)` dan `validate_environment()`:
+    - Dukungan hierarki penemuan file `.env` otomatis (`ENV_FILE`, `.env.production`, `.env.integration`, dan `.env` default).
+    - Validasi fail-fast saat startup server yang mengecek integritas `SECRET_KEY` (menolak kunci bawaan tidak aman atau panjang < 32 karakter pada production), `DEBUG=False` pada production, larangan wildcard `ALLOWED_HOSTS` pada production, skema URL database valid (`sqlite` atau `postgresql`), serta kewajiban `REDIS_URL` pada mode `integration` dan `production` (kebijakan fail-closed tanpa silent fallback ke in-memory cache).
+  - Pembaruan `backend/config/settings.py` untuk mengintegrasikan validasi fail-fast `validate_environment()`, isolasi konfigurasi database test runner (`DATABASES["default"]["TEST"]`), penyesuaian `CACHE_KEY_PREFIX`, dan pembersihan deklarasi redundan `PRIVATE_MEDIA_ROOT`.
+  - Pembuatan dan pembaruan template environment file:
+    - `backend/.env`: Konfigurasi pengembang lokal default (SQLite WAL, Redis 127.0.0.1:6379/1, `DJANGO_ENV=development`).
+    - `backend/.env.example`: Template publik dengan nilai placeholder bersih non-rahasia dan petunjuk konfigurasi.
+    - `backend/.env.integration`: Konfigurasi pengujian integrasi PostgreSQL WSL2 port 15432 dan Redis port 6379 database 1 (`DJANGO_ENV=integration`).
+    - `backend/.env.integration.example`: Template publik pengujian integrasi dengan panduan parameter koneksi.
+  - Pembaruan root `.gitignore` dengan aturan `!.env.*.example` untuk menjamin file template example terlacak pada Git tanpa membocorkan file `.env` dan `.env.integration` aktual.
+
+- **Ekspansi Rangkaian Pengujian Otomatis (11 pengujian baru, total 111 pengujian terdaftar):**
+  - Pembuatan test suite regresi konfigurasi environment `backend/tests/test_environment_config.py` (11 pengujian lulus 100%):
+    - `test_env_example_files_exist_and_match`: Memvalidasi keberadaan `.env.example` dan `.env.integration.example`.
+    - `test_env_example_has_no_real_secrets`: Memverifikasi bahwa file contoh tidak mengandung kata sandi riil, token rahasia, atau kunci privat.
+    - `test_load_environment_reads_specified_file`: Menguji isolasi pembacaan file environment kustom via variabel `ENV_FILE`.
+    - `test_validate_environment_passes_on_valid_dev`: Memvalidasi kelulusan konfigurasi mode development.
+    - `test_validate_environment_fails_on_insecure_secret_in_prod`: Memvalidasi kegagalan fail-fast jika `SECRET_KEY` lemah digunakan pada mode production.
+    - `test_validate_environment_fails_on_debug_true_in_prod`: Memvalidasi penolakan `DEBUG=True` pada production.
+    - `test_validate_environment_fails_on_wildcard_host_in_prod`: Memvalidasi penolakan host `*` pada production.
+    - `test_validate_environment_fails_on_invalid_db_scheme`: Memvalidasi penolakan skema database tidak didukung.
+    - `test_validate_environment_fails_on_missing_redis_in_prod`: Memvalidasi kegagalan fail-closed jika `REDIS_URL` kosong pada production.
+    - `test_validate_environment_fails_on_missing_redis_in_integration`: Memvalidasi penolakan ketiadaan Redis pada mode integration.
+    - `test_database_test_configuration_isolated`: Memverifikasi bahwa konfigurasi test database terisolasi dari database operasional.
+  - Hasil eksekusi Pytest lengkap: 110 passed, 1 skipped (dual-engine conditional) dari 111 pengujian dalam 43.14s.
+  - Hasil eksekusi PostgreSQL live test suite (`DATABASE_URL=postgresql://test_be_user:...@127.0.0.1:15432/test_sie_bunut`): 17 passed, 1 skipped dalam 5.70s.
+
+
