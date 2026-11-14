@@ -33,6 +33,10 @@ export const NewRequestPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
   const [fileError, setFileError] = React.useState<string | null>(null);
+  const [createdRequestId, setCreatedRequestId] = React.useState<number | null>(
+    null,
+  );
+  const [uploadError, setUploadError] = React.useState<string | null>(null);
 
   // Fetch service types
   const { data: serviceTypes, isLoading: isTypesLoading } = useQuery<{
@@ -87,28 +91,41 @@ export const NewRequestPage: React.FC = () => {
     setSelectedFile(file);
   };
 
-  // Submit Mutation
+  // Submit Mutation with Partial Failure Handling
   const submitMutation = useMutation({
     mutationFn: async (formData: RequestFormData) => {
-      // 1. Create service request
-      const res = await apiClient.post<{ id: number }>(
-        "/administration/requests",
-        formData,
-      );
-      const requestId = res.data.id;
+      let requestId = createdRequestId;
+
+      // 1. Create service request if not yet created
+      if (!requestId) {
+        const res = await apiClient.post<{ id: number }>(
+          "/administration/requests",
+          formData,
+        );
+        requestId = res.data.id;
+        setCreatedRequestId(requestId);
+      }
 
       // 2. Upload attachment if provided
       if (selectedFile) {
-        const fileData = new FormData();
-        fileData.append("file", selectedFile);
-        fileData.append("document_type", "LAMPIRAN");
-        await apiClient.post(
-          `/administration/requests/${requestId}/documents`,
-          fileData,
-          {
-            headers: { "Content-Type": "multipart/form-data" },
-          },
-        );
+        try {
+          const fileData = new FormData();
+          fileData.append("file", selectedFile);
+          fileData.append("document_type", "LAMPIRAN");
+          await apiClient.post(
+            `/administration/requests/${requestId}/documents`,
+            fileData,
+            {
+              headers: { "Content-Type": "multipart/form-data" },
+            },
+          );
+        } catch (fileErr) {
+          const errMessage =
+            (fileErr as { normalized?: { message?: string } })?.normalized
+              ?.message || "Gagal mengunggah berkas lampiran.";
+          setUploadError(errMessage);
+          throw new Error("UPLOAD_FAILED_AFTER_CREATION");
+        }
       }
 
       return requestId;
@@ -120,10 +137,16 @@ export const NewRequestPage: React.FC = () => {
       navigate(`/requests/${requestId}`);
     },
     onError: (err: unknown) => {
-      const errObj = err as { normalized?: { message: string } };
-      toast.error(
-        errObj?.normalized?.message || "Gagal membuat permohonan surat",
-      );
+      if ((err as Error)?.message === "UPLOAD_FAILED_AFTER_CREATION") {
+        toast.warning(
+          "Permohonan surat berhasil dicatat, namun berkas lampiran gagal diunggah. Silakan klik 'Coba Unggah Ulang' untuk mencoba kembali tanpa menduplikasi data.",
+        );
+      } else {
+        const errObj = err as { normalized?: { message: string } };
+        toast.error(
+          errObj?.normalized?.message || "Gagal membuat permohonan surat",
+        );
+      }
     },
   });
 
@@ -146,6 +169,35 @@ export const NewRequestPage: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {createdRequestId && uploadError && (
+        <div className="p-4 rounded-card bg-semantic-warning-bg border border-semantic-warning-border text-semantic-warning-fg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h4 className="font-semibold text-sm">
+              Permohonan Berhasil Dicatat (#{createdRequestId}), Unggah Lampiran
+              Gagal
+            </h4>
+            <p className="text-xs mt-0.5">{uploadError}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => navigate(`/requests/${createdRequestId}`)}
+            >
+              Buka Detail Surat
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              isLoading={submitMutation.isPending}
+              onClick={handleSubmit((d) => submitMutation.mutate(d))}
+            >
+              Coba Unggah Ulang
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div className="bg-surface border border-border rounded-card p-6 shadow-sm">
         <form
@@ -256,7 +308,7 @@ export const NewRequestPage: React.FC = () => {
               variant="primary"
               isLoading={submitMutation.isPending}
             >
-              Kirim Permohonan
+              {createdRequestId ? "Unggah Ulang Lampiran" : "Kirim Permohonan"}
             </Button>
           </div>
         </form>
