@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { UserPlus, Shield, Check, X as XIcon } from "lucide-react";
+import { UserPlus, Shield, Check, X as XIcon, Eye } from "lucide-react";
 
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
@@ -48,6 +48,10 @@ export const AccountManagementPage: React.FC = () => {
   const [page, setPage] = React.useState(1);
   const pageSize = 10;
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
+  const [selectedUserId, setSelectedUserId] = React.useState<number | null>(
+    null,
+  );
+  const [isDetailOpen, setIsDetailOpen] = React.useState(false);
 
   // Fetch users
   const { data, isLoading } = useQuery<UserListResponse>({
@@ -65,6 +69,19 @@ export const AccountManagementPage: React.FC = () => {
       return res.data;
     },
   });
+
+  // Fetch single user detail (operationId: getUserDetail)
+  const { data: userDetail, isLoading: isUserDetailLoading } =
+    useQuery<UserItem>({
+      queryKey: ["accounts-user-detail", selectedUserId],
+      queryFn: async () => {
+        const res = await apiClient.get<UserItem>(
+          `/accounts/users/${selectedUserId}`,
+        );
+        return res.data;
+      },
+      enabled: selectedUserId !== null && isDetailOpen,
+    });
 
   // Fetch available roles
   const { data: rolesData } = useQuery<{
@@ -189,19 +206,32 @@ export const AccountManagementPage: React.FC = () => {
       className: "text-right",
       headerClassName: "text-right",
       cell: (user) => (
-        <Button
-          variant={user.is_active ? "danger" : "accent"}
-          size="sm"
-          onClick={() =>
-            toggleActiveMutation.mutate({
-              id: user.id,
-              is_active: !user.is_active,
-            })
-          }
-          isLoading={toggleActiveMutation.isPending}
-        >
-          {user.is_active ? "Nonaktifkan" : "Aktifkan"}
-        </Button>
+        <div className="flex items-center justify-end gap-1.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setSelectedUserId(user.id);
+              setIsDetailOpen(true);
+            }}
+            aria-label={`Lihat detail ${user.name}`}
+          >
+            <Eye className="h-4 w-4" aria-hidden="true" />
+          </Button>
+          <Button
+            variant={user.is_active ? "danger" : "accent"}
+            size="sm"
+            onClick={() =>
+              toggleActiveMutation.mutate({
+                id: user.id,
+                is_active: !user.is_active,
+              })
+            }
+            isLoading={toggleActiveMutation.isPending}
+          >
+            {user.is_active ? "Nonaktifkan" : "Aktifkan"}
+          </Button>
+        </div>
       ),
     },
   ];
@@ -397,6 +427,109 @@ export const AccountManagementPage: React.FC = () => {
                 </Button>
               </div>
             </form>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
+
+      {/* User Detail Dialog (getUserDetail) */}
+      <DialogPrimitive.Root open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />
+          <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-50 w-full max-w-md translate-x-[-50%] translate-y-[-50%] rounded-panel border border-border bg-surface p-6 shadow-lg">
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <div className="flex items-center gap-2">
+                <Shield
+                  className="h-5 w-5 text-brand-primary"
+                  aria-hidden="true"
+                />
+                <DialogPrimitive.Title className="text-lg font-semibold text-text-foreground">
+                  Detail Akun Pengguna
+                </DialogPrimitive.Title>
+              </div>
+              <DialogPrimitive.Close asChild>
+                <button
+                  type="button"
+                  className="p-1 rounded-sm text-text-muted hover:text-text-foreground"
+                  aria-label="Tutup"
+                >
+                  <XIcon className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </DialogPrimitive.Close>
+            </div>
+
+            {isUserDetailLoading ? (
+              <div className="py-8 text-center text-sm text-text-muted">
+                Memuat informasi akun...
+              </div>
+            ) : userDetail ? (
+              <div className="space-y-4 pt-4 text-sm">
+                <div className="bg-surface-subtle p-3.5 rounded-input border border-border space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-text-muted text-xs">
+                      ID Pengguna:
+                    </span>
+                    <span className="font-mono text-xs font-semibold">
+                      #{userDetail.id}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-text-muted text-xs">Username:</span>
+                    <span className="font-mono font-semibold">
+                      @{userDetail.username}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-text-muted text-xs">
+                      Nama Lengkap:
+                    </span>
+                    <span className="font-semibold">
+                      {userDetail.name || "-"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-text-muted text-xs">Status:</span>
+                    <StatusBadge
+                      status={userDetail.is_active ? "AKTIF" : "NONAKTIF"}
+                    />
+                  </div>
+                  {userDetail.created_at && (
+                    <div className="flex justify-between">
+                      <span className="text-text-muted text-xs">
+                        Terdaftar:
+                      </span>
+                      <span className="text-xs text-text-muted">
+                        {userDetail.created_at}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <h4 className="text-xs font-semibold uppercase text-text-muted mb-2">
+                    Peran & Hak Akses:
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {userDetail.roles?.map((r) => (
+                      <span
+                        key={r}
+                        className="px-2.5 py-1 rounded-sm bg-brand-primary-subtle text-brand-primary text-xs font-semibold"
+                      >
+                        {r}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-3 border-t border-border">
+                  <Button
+                    variant="secondary"
+                    onClick={() => setIsDetailOpen(false)}
+                  >
+                    Tutup
+                  </Button>
+                </div>
+              </div>
+            ) : null}
           </DialogPrimitive.Content>
         </DialogPrimitive.Portal>
       </DialogPrimitive.Root>
