@@ -1,11 +1,18 @@
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import axe from 'axe-core';
 import { Button } from '@/components/atoms/Button';
 import { StatusBadge } from '@/components/atoms/StatusBadge';
 import { MetricCard } from '@/components/molecules/MetricCard';
 import { EmptyState } from '@/components/molecules/EmptyState';
+import { LoginPage } from '@/pages/auth/LoginPage';
 import { Users } from 'lucide-react';
+
+const testQueryClient = new QueryClient({
+  defaultOptions: { queries: { retry: false } },
+});
 
 // Configure axe rules for jsdom testing
 async function checkA11y(container: HTMLElement) {
@@ -52,6 +59,18 @@ describe('Accessibility & WCAG 2.1 AA Audit (axe-core)', () => {
         title="Tidak Ada Data"
         description="Belum ada catatan presensi untuk tanggal ini."
       />
+    );
+    const violations = await checkA11y(container);
+    expect(violations).toHaveLength(0);
+  });
+
+  it('LoginPage passes accessibility audit with accessible form inputs and landmark semantics', async () => {
+    const { container } = render(
+      <QueryClientProvider client={testQueryClient}>
+        <BrowserRouter>
+          <LoginPage />
+        </BrowserRouter>
+      </QueryClientProvider>
     );
     const violations = await checkA11y(container);
     expect(violations).toHaveLength(0);
