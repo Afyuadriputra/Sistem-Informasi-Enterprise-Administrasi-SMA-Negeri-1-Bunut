@@ -13,7 +13,7 @@ def test_openapi_contract_checksum():
     assert contract_path.exists(), f"Contract file not found at {contract_path}"
 
     sha256 = hashlib.sha256(contract_path.read_bytes()).hexdigest().upper()
-    assert sha256 == "D3871BA834C17FC6DC49BB92F63391EB3EC63571E784A6623CE8E2A65CB52B9E"
+    assert sha256 == "F1618EB80154D970F639A5617AD645D3A37D139A9CC6B90AFA8E4E054A10B72B"
 
 
 def test_database_dbml_checksum():
