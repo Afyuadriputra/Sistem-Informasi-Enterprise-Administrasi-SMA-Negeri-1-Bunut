@@ -141,4 +141,22 @@ test.describe("E2E Role-Based Navigation & Workflow Verification", () => {
       fullPage: true,
     });
   });
+
+  test("7. Multi-Role (Guru & Wali Kelas) Login & Role Union", async ({ page }) => {
+    await page.goto("/login");
+    await page.fill("#username", "guru_walikelas");
+    await page.fill("#password", "Password123!");
+    await page.click('button[type="submit"]');
+
+    await expect(page).toHaveURL(/.*\/dashboard/);
+    await expect(page.getByText(/Peran Aktif: (Guru|Wali Kelas)/)).toBeVisible();
+
+    // Navigate to attendance record
+    await page.click('a[href="/attendance/record"]');
+    await expect(page).toHaveURL(/.*\/attendance\/record/);
+
+    // Navigate to attendance recap
+    await page.click('a[href="/attendance/recap"]');
+    await expect(page).toHaveURL(/.*\/attendance\/recap/);
+  });
 });
