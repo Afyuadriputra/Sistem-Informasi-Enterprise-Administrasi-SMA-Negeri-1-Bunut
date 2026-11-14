@@ -255,3 +255,35 @@ All notable changes to the frontend codebase are documented chronologically in t
 - Production Build (`vite build`): **Exit Code 0 dalam 7.71s**.
 - Prettier Code Standard (`prettier --check`): **Exit Code 0 (Clean)**.
 - Final Status Declared: **`READY — FRONTEND_VERIFIED_UX_REFINED_AND_READY_FOR_INTEGRATION`**.
+
+---
+
+## FE-M10.2 - Centralized API Configuration & Environment Hardening (INT-M8.1 Addendum)
+*Completed: 14 November 2026*
+
+### Added & Updated
+- **Pemusatan Konfigurasi Environment & Sanitasi URL API:**
+  - Exported fungsi sentral `resolveApiBaseUrl(raw?: string)` pada `frontend/src/lib/api-client.ts`:
+    - Normalisasi trailing slash (menghapus tanda slash di akhir URL).
+    - Memastikan path `/api` tersemat secara otomatis pada URL origin root absolut (misal `http://localhost:8000` menjadi `http://localhost:8000/api`).
+    - Fallback aman ke `/api` default saat variabel environment tidak didefinisikan atau kosong.
+  - Ditambahkan interceptor request pada `api-client.ts` yang mendeteksi dan memangkas prefix duplikat `/api` (jika `config.url` berawalan `/api/` dan `baseURL` berakhiran `/api`), mencegah timbulnya kesalahan HTTP 404 `/api/api/...`.
+  - Diperbarui `frontend/vite.config.ts` untuk memuat variabel `BACKEND_PROXY_TARGET` melalui `loadEnv(mode, process.cwd(), '')` hanya pada level dev server Node.js, menjaga isolasi kredensial server-side dari JavaScript bundle browser.
+  - Diperbarui `frontend/playwright.config.ts` agar mendukung variabel lingkungan dinamis `PLAYWRIGHT_BASE_URL` dengan fallback default ke `http://localhost:3000`.
+  - Dibuat template konfigurasi environment:
+    - `frontend/.env`: Konfigurasi pengembang lokal default (`VITE_API_BASE_URL=/api`, `BACKEND_PROXY_TARGET=http://127.0.0.1:8000`).
+    - `frontend/.env.example`: Template publik dengan panduan konfigurasi dev dan reverse proxy.
+    - `frontend/.env.production.example`: Template publik untuk deployment produksi.
+
+- **Penguatan Pengujian Otomatis & Proteksi Secret (3 pengujian baru, total 74 pengujian Vitest):**
+  - Ekspansi berkas uji `frontend/tests/unit/api-client.test.ts` dari 3 menjadi 6 pengujian:
+    - Pengujian resolusi dan normalisasi `resolveApiBaseUrl` dengan input undefined, kosong, relative path, dan absolute URL.
+    - Pengujian pencegahan prefix duplikat `/api` pada request interceptor Axios.
+    - Pengujian pencegahan kebocoran secret backend: memverifikasi bahwa tidak ada variabel sensitif backend (`DATABASE_URL`, `SECRET_KEY`, `REDIS_URL`, atau kredensial proxy) yang bocor ke dalam `import.meta.env` client bundle.
+
+### Verification Results
+- Vitest Automated Tests: **15 Test Files, 74 Tests PASS (100% Lulus, 0 Gagal)**.
+- Playwright E2E Browser Tests: **6 Tests PASS (13.9s)**.
+- TypeScript Compilation (`tsc --noEmit`): **Exit Code 0 (0 errors)**.
+- Production Build (`vite build`): **Exit Code 0 dalam 9.00s**.
+- Final Status Declared: **`READY — FRONTEND_VERIFIED_UX_REFINED_AND_READY_FOR_INTEGRATION`**.
