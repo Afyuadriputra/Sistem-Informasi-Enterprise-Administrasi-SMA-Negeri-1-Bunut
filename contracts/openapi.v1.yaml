@@ -1948,6 +1948,7 @@ components:
       - class_name
       - date
       - students
+      - roster_version
       properties:
         class_id:
           type: integer
@@ -1962,6 +1963,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AttendanceRosterItem'
+        roster_version:
+          type: integer
+          description: Nomor revisi roster untuk deteksi konkurensi optimistik
+          default: 0
     AttendanceBulkItem:
       type: object
       required:
@@ -1981,6 +1986,7 @@ components:
       - class_id
       - date
       - items
+      - expected_roster_version
       properties:
         class_id:
           type: integer
@@ -1991,6 +1997,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AttendanceBulkItem'
+        expected_roster_version:
+          type: integer
+          description: Nomor revisi roster yang diharapkan untuk pencegahan lost update
     AttendanceBulkResponse:
       type: object
       required:
