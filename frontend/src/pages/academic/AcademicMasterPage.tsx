@@ -7,6 +7,9 @@ import {
   BookOpen,
   Briefcase,
   CheckCircle2,
+  FileText,
+  Edit,
+  X,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -45,16 +48,29 @@ interface EmployeeItem {
   created_at?: string;
 }
 
+interface ServiceTypeItem {
+  id: number;
+  code: string;
+  name: string;
+  description?: string | null;
+  requires_approval: boolean;
+  is_active: boolean;
+}
+
 export const AcademicMasterPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = React.useState<
-    "years" | "classes" | "employees"
+    "years" | "classes" | "employees" | "services"
   >("years");
 
   // Modals
   const [isYearModalOpen, setIsYearModalOpen] = React.useState(false);
   const [isClassModalOpen, setIsClassModalOpen] = React.useState(false);
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = React.useState(false);
+  const [isServiceTypeModalOpen, setIsServiceTypeModalOpen] =
+    React.useState(false);
+  const [editingServiceType, setEditingServiceType] =
+    React.useState<ServiceTypeItem | null>(null);
 
   // Queries
   const { data: yearsData, isLoading: isYearsLoading } = useQuery<{
@@ -76,6 +92,14 @@ export const AcademicMasterPage: React.FC = () => {
   }>({
     queryKey: ["school-employees"],
     queryFn: async () => (await apiClient.get("/master/employees")).data,
+  });
+
+  const { data: servicesData, isLoading: isServicesLoading } = useQuery<{
+    items: ServiceTypeItem[];
+  }>({
+    queryKey: ["service-types-master"],
+    queryFn: async () =>
+      (await apiClient.get("/administration/service-types")).data,
   });
 
   // Year Mutations
@@ -147,6 +171,56 @@ export const AcademicMasterPage: React.FC = () => {
     },
   });
 
+  // Service Type Mutations (createServiceType & updateServiceType)
+  const createServiceTypeMutation = useMutation({
+    mutationFn: async (payload: {
+      code: string;
+      name: string;
+      description?: string;
+      requires_approval: boolean;
+    }) => (await apiClient.post("/administration/service-types", payload)).data,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["service-types-master"] });
+      queryClient.invalidateQueries({ queryKey: ["service-types"] });
+      toast.success("Jenis layanan persuratan berhasil ditambahkan");
+      setIsServiceTypeModalOpen(false);
+      resetServiceType();
+    },
+    onError: (err: unknown) => {
+      const errObj = err as { normalized?: { message: string } };
+      toast.error(errObj?.normalized?.message || "Gagal membuat jenis layanan");
+    },
+  });
+
+  const updateServiceTypeMutation = useMutation({
+    mutationFn: async ({
+      id,
+      payload,
+    }: {
+      id: number;
+      payload: {
+        name?: string;
+        description?: string;
+        requires_approval?: boolean;
+        is_active?: boolean;
+      };
+    }) =>
+      (await apiClient.patch(`/administration/service-types/${id}`, payload))
+        .data,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["service-types-master"] });
+      queryClient.invalidateQueries({ queryKey: ["service-types"] });
+      toast.success("Jenis layanan persuratan berhasil diperbarui");
+      setEditingServiceType(null);
+    },
+    onError: (err: unknown) => {
+      const errObj = err as { normalized?: { message: string } };
+      toast.error(
+        errObj?.normalized?.message || "Gagal memperbarui jenis layanan",
+      );
+    },
+  });
+
   // Forms
   const {
     register: regYear,
@@ -184,6 +258,35 @@ export const AcademicMasterPage: React.FC = () => {
   }>({
     defaultValues: { status: "AKTIF" },
   });
+
+  const {
+    register: regServiceType,
+    handleSubmit: submitServiceType,
+    reset: resetServiceType,
+  } = useForm<{
+    code: string;
+    name: string;
+    description: string;
+    requires_approval: boolean;
+  }>({
+    defaultValues: {
+      code: "",
+      name: "",
+      description: "",
+      requires_approval: true,
+    },
+  });
+
+  const {
+    register: regEditServiceType,
+    handleSubmit: submitEditServiceType,
+    reset: resetEditServiceType,
+  } = useForm<{
+    name: string;
+    description: string;
+    requires_approval: boolean;
+    is_active: boolean;
+  }>();
 
   // Columns for Years
   const yearColumns: ColumnDef<AcademicYearItem>[] = [
@@ -236,6 +339,86 @@ export const AcademicMasterPage: React.FC = () => {
     { header: "Status", cell: (item) => <StatusBadge status={item.status} /> },
   ];
 
+  // Columns for Service Types
+  const serviceTypeColumns: ColumnDef<ServiceTypeItem>[] = [
+    {
+      header: "Kode Layanan",
+      accessorKey: "code",
+      className: "font-mono text-xs font-semibold",
+    },
+    {
+      header: "Nama Layanan Surat",
+      cell: (item) => (
+        <div>
+          <span className="font-semibold text-text-foreground">
+            {item.name}
+          </span>
+          {item.description && (
+            <p className="text-xs text-text-muted mt-0.5">{item.description}</p>
+          )}
+        </div>
+      ),
+    },
+    {
+      header: "Persetujuan Kepsek",
+      cell: (item) => (
+        <span
+          className={`px-2 py-0.5 rounded-sm text-xs font-semibold ${
+            item.requires_approval
+              ? "bg-brand-primary-subtle text-brand-primary"
+              : "bg-surface-subtle text-text-muted"
+          }`}
+        >
+          {item.requires_approval ? "Perlu Persetujuan" : "Tanpa Persetujuan"}
+        </span>
+      ),
+    },
+    {
+      header: "Status",
+      cell: (item) => (
+        <StatusBadge status={item.is_active ? "AKTIF" : "NONAKTIF"} />
+      ),
+    },
+    {
+      header: "Aksi",
+      className: "text-right",
+      headerClassName: "text-right",
+      cell: (item) => (
+        <div className="flex items-center justify-end gap-1.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setEditingServiceType(item);
+              resetEditServiceType({
+                name: item.name,
+                description: item.description || "",
+                requires_approval: item.requires_approval,
+                is_active: item.is_active,
+              });
+            }}
+          >
+            <Edit className="h-3.5 w-3.5 mr-1" />
+            Ubah
+          </Button>
+          <Button
+            variant={item.is_active ? "danger" : "accent"}
+            size="sm"
+            onClick={() =>
+              updateServiceTypeMutation.mutate({
+                id: item.id,
+                payload: { is_active: !item.is_active },
+              })
+            }
+            isLoading={updateServiceTypeMutation.isPending}
+          >
+            {item.is_active ? "Nonaktifkan" : "Aktifkan"}
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Tab Switcher */}
@@ -277,6 +460,19 @@ export const AcademicMasterPage: React.FC = () => {
         >
           <Briefcase className="h-4 w-4" />
           <span>Data Pegawai Sekolah</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("services")}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+            activeTab === "services"
+              ? "border-brand-primary text-brand-primary"
+              : "border-transparent text-text-muted hover:text-text-foreground"
+          }`}
+        >
+          <FileText className="h-4 w-4" />
+          <span>Layanan Persuratan TU</span>
         </button>
       </div>
 
@@ -371,6 +567,38 @@ export const AcademicMasterPage: React.FC = () => {
             columns={employeeColumns}
             data={employeesData?.items || []}
             isLoading={isEmployeesLoading}
+            keyExtractor={(i) => i.id}
+          />
+        </div>
+      )}
+
+      {/* Tab 4: Layanan Persuratan TU (listServiceTypes, createServiceType, updateServiceType) */}
+      {activeTab === "services" && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center bg-surface p-4 rounded-card border border-border shadow-sm">
+            <div>
+              <h3 className="font-semibold text-text-foreground">
+                Katalog Jenis Layanan Persuratan Tata Usaha
+              </h3>
+              <p className="text-xs text-text-muted">
+                Jenis surat dinas dan disposisi persetujuan Kepala Sekolah.
+              </p>
+            </div>
+            <Button
+              variant="primary"
+              onClick={() => {
+                resetServiceType();
+                setIsServiceTypeModalOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4 mr-1.5" /> Tambah Jenis Layanan
+            </Button>
+          </div>
+
+          <DataTable<ServiceTypeItem>
+            columns={serviceTypeColumns}
+            data={servicesData?.items || []}
+            isLoading={isServicesLoading}
             keyExtractor={(i) => i.id}
           />
         </div>
@@ -594,6 +822,207 @@ export const AcademicMasterPage: React.FC = () => {
                 </Button>
               </div>
             </form>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
+
+      {/* Modal: Tambah Jenis Layanan (createServiceType) */}
+      <DialogPrimitive.Root
+        open={isServiceTypeModalOpen}
+        onOpenChange={setIsServiceTypeModalOpen}
+      >
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />
+          <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-50 w-full max-w-md translate-x-[-50%] translate-y-[-50%] rounded-panel border border-border bg-surface p-6 shadow-lg">
+            <div className="flex items-center justify-between pb-2 border-b border-border">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-brand-primary" />
+                <DialogPrimitive.Title className="text-lg font-semibold text-text-foreground">
+                  Tambah Jenis Layanan Persuratan
+                </DialogPrimitive.Title>
+              </div>
+              <DialogPrimitive.Close asChild>
+                <button
+                  type="button"
+                  className="p-1 rounded-sm text-text-muted hover:text-text-foreground"
+                  aria-label="Tutup"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </DialogPrimitive.Close>
+            </div>
+
+            <form
+              onSubmit={submitServiceType((d) =>
+                createServiceTypeMutation.mutate(d),
+              )}
+              className="space-y-4 pt-4"
+            >
+              <FormField id="st_code" label="Kode Layanan" isRequired>
+                <Input
+                  id="st_code"
+                  placeholder="Contoh: SK-AKTIF"
+                  {...regServiceType("code", { required: true })}
+                />
+              </FormField>
+
+              <FormField id="st_name" label="Nama Layanan Surat" isRequired>
+                <Input
+                  id="st_name"
+                  placeholder="Contoh: Surat Keterangan Siswa Aktif"
+                  {...regServiceType("name", { required: true })}
+                />
+              </FormField>
+
+              <FormField id="st_desc" label="Deskripsi / Catatan Persyaratan">
+                <Input
+                  id="st_desc"
+                  placeholder="Contoh: Diperlukan untuk permohonan beasiswa atau tunjangan dinas"
+                  {...regServiceType("description")}
+                />
+              </FormField>
+
+              <div className="flex items-center gap-2 pt-2">
+                <input
+                  id="st_approval"
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-border-input text-brand-primary focus:ring-brand-primary"
+                  {...regServiceType("requires_approval")}
+                />
+                <label
+                  htmlFor="st_approval"
+                  className="text-sm font-medium text-text-foreground"
+                >
+                  Wajib Persetujuan Kepala Sekolah (Disposisi)
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-border">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setIsServiceTypeModalOpen(false)}
+                >
+                  Batal
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  isLoading={createServiceTypeMutation.isPending}
+                >
+                  Simpan Jenis Layanan
+                </Button>
+              </div>
+            </form>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
+
+      {/* Modal: Ubah Jenis Layanan (updateServiceType) */}
+      <DialogPrimitive.Root
+        open={editingServiceType !== null}
+        onOpenChange={(open) => !open && setEditingServiceType(null)}
+      >
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />
+          <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-50 w-full max-w-md translate-x-[-50%] translate-y-[-50%] rounded-panel border border-border bg-surface p-6 shadow-lg">
+            <div className="flex items-center justify-between pb-2 border-b border-border">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-brand-primary" />
+                <DialogPrimitive.Title className="text-lg font-semibold text-text-foreground">
+                  Ubah Jenis Layanan ({editingServiceType?.code})
+                </DialogPrimitive.Title>
+              </div>
+              <DialogPrimitive.Close asChild>
+                <button
+                  type="button"
+                  className="p-1 rounded-sm text-text-muted hover:text-text-foreground"
+                  aria-label="Tutup"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </DialogPrimitive.Close>
+            </div>
+
+            {editingServiceType && (
+              <form
+                onSubmit={submitEditServiceType((d) =>
+                  updateServiceTypeMutation.mutate({
+                    id: editingServiceType.id,
+                    payload: d,
+                  }),
+                )}
+                className="space-y-4 pt-4"
+              >
+                <FormField
+                  id="edit_st_name"
+                  label="Nama Layanan Surat"
+                  isRequired
+                >
+                  <Input
+                    id="edit_st_name"
+                    {...regEditServiceType("name", { required: true })}
+                  />
+                </FormField>
+
+                <FormField
+                  id="edit_st_desc"
+                  label="Deskripsi / Catatan Persyaratan"
+                >
+                  <Input
+                    id="edit_st_desc"
+                    {...regEditServiceType("description")}
+                  />
+                </FormField>
+
+                <div className="flex items-center gap-2 pt-2">
+                  <input
+                    id="edit_st_approval"
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-border-input text-brand-primary focus:ring-brand-primary"
+                    {...regEditServiceType("requires_approval")}
+                  />
+                  <label
+                    htmlFor="edit_st_approval"
+                    className="text-sm font-medium text-text-foreground"
+                  >
+                    Wajib Persetujuan Kepala Sekolah (Disposisi)
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    id="edit_st_active"
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-border-input text-brand-primary focus:ring-brand-primary"
+                    {...regEditServiceType("is_active")}
+                  />
+                  <label
+                    htmlFor="edit_st_active"
+                    className="text-sm font-medium text-text-foreground"
+                  >
+                    Status Layanan Aktif
+                  </label>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-border">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setEditingServiceType(null)}
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    isLoading={updateServiceTypeMutation.isPending}
+                  >
+                    Simpan Perubahan
+                  </Button>
+                </div>
+              </form>
+            )}
           </DialogPrimitive.Content>
         </DialogPrimitive.Portal>
       </DialogPrimitive.Root>
