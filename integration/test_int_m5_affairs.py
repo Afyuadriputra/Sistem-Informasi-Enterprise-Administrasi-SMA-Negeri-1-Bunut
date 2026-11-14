@@ -141,6 +141,24 @@ def test_m5_scenario_a2_student_affairs_and_privacy():
     ), "Wali Kelas MUST receive masked private counseling note"
     print("PASS: DEC-TECH-18 privacy masking verified: Wali Kelas received masked text, zero canary leak")
 
+    # 7c. Pimpinan Sekolah denied from reading case detail -> HTTP 403
+    kepsek_tok = get_token("kepsek")
+    try:
+        api_request("GET", f"/api/student-affairs/cases/{case_id}", kepsek_tok)
+        pytest.fail("Expected HTTP 403 for Pimpinan accessing case detail")
+    except urllib.error.HTTPError as e:
+        assert e.code == 403
+        print("PASS: Pimpinan strictly denied from reading case detail (HTTP 403 per RBAC)")
+
+    # 7d. Administrator denied from reading case detail -> HTTP 403
+    admin_tok = get_token("admin")
+    try:
+        api_request("GET", f"/api/student-affairs/cases/{case_id}", admin_tok)
+        pytest.fail("Expected HTTP 403 for Administrator accessing case detail")
+    except urllib.error.HTTPError as e:
+        assert e.code == 403
+        print("PASS: Administrator strictly denied from reading case detail (HTTP 403 per RBAC)")
+
 
 if __name__ == "__main__":
     test_m5_scenario_a2_student_affairs_and_privacy()
